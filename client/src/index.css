@@ -202,6 +202,26 @@ button:disabled { opacity: .38; cursor: not-allowed; }
 .block-navbar { align-items: center; }
 .block-navbar .block-content { font-size: 13px; font-weight: 700; letter-spacing: .02em; }
 .block-divider { border-width: 0 0 1px 0; }
+.block-search { align-items: center; }
+.block-search .block-content { font-size: 13px; padding-left: 13px; }
+.search-content { display: flex; align-items: center; gap: 8px; width: 100%; }
+.block-badge .block-content { font-size: 11px; font-weight: 700; letter-spacing: .03em; }
+.badge-content { display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.block-avatar .block-content { font-size: 20px; font-weight: 700; }
+.avatar-content { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.block-icon .block-content { font-size: 24px; }
+.icon-content { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.block-list { overflow: hidden; flex-direction: column; }
+.block-list .block-content { padding: 0; width: 100%; }
+.list-content { display: flex; flex-direction: column; width: 100%; }
+.list-item { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid rgba(0,0,0,.06); font-size: 13px; }
+.list-bullet { width: 5px; height: 5px; background: currentColor; border-radius: 50%; opacity: .5; flex-shrink: 0; }
+.block-table { overflow: hidden; flex-direction: column; }
+.block-table .block-content { padding: 0; width: 100%; }
+.table-content { display: flex; flex-direction: column; width: 100%; }
+.table-head { display: flex; border-bottom: 2px solid rgba(0,0,0,.08); font-size: 11px; font-weight: 700; }
+.table-head span, .table-row span { flex: 1; padding: 8px 12px; }
+.table-row { display: flex; border-bottom: 1px solid rgba(0,0,0,.05); font-size: 13px; }
 .image-sun { position: absolute; top: 28px; right: 29px; width: 17px; height: 17px; border: 2px solid currentColor; border-radius: 50%; opacity: .6; }
 .image-mountains { position: absolute; left: 18px; right: 18px; bottom: 19px; height: 82px; border-top: 2px solid currentColor; opacity: .6; clip-path: polygon(0 100%, 31% 42%, 52% 74%, 69% 24%, 100% 100%); background: currentColor; }
 .image-label { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; font-size: 11px; letter-spacing: .03em; opacity: .74; }

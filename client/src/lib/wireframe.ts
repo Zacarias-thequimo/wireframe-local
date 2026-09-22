@@ -11,7 +11,13 @@ export type BlockType =
   | "image"
   | "card"
   | "navbar"
-  | "divider";
+  | "divider"
+  | "list"
+  | "table"
+  | "badge"
+  | "avatar"
+  | "search"
+  | "icon";
 
 export type Device = "desktop" | "tablet" | "mobile";
 
@@ -63,6 +69,12 @@ export const BLOCK_TYPES: BlockType[] = [
   "card",
   "navbar",
   "divider",
+  "list",
+  "table",
+  "badge",
+  "avatar",
+  "search",
+  "icon",
 ];
 
 export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
@@ -74,6 +86,12 @@ export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   card: "Card",
   navbar: "Navegação",
   divider: "Divisor",
+  list: "Lista",
+  table: "Tabela",
+  badge: "Badge",
+  avatar: "Avatar",
+  search: "Busca",
+  icon: "Ícone",
 };
 
 export const DEVICES: Device[] = ["desktop", "tablet", "mobile"];
@@ -113,6 +131,12 @@ export function defaultStyle(type: BlockType): BlockStyle {
     card: { fill: "#fbfbfd", border: "#e4e5ea", text: "#686d7c", radius: 12 },
     navbar: { fill: "#ffffff", border: "#d7d9e0", text: "#242631", radius: 12 },
     divider: { fill: "#d7d9e0", border: "#d7d9e0", text: "#d7d9e0", radius: 0 },
+    list: { fill: "#ffffff", border: "#e4e5ea", text: "#3f414c", radius: 10 },
+    table: { fill: "#ffffff", border: "#e4e5ea", text: "#3f414c", radius: 8 },
+    badge: { fill: "#e8f5e9", border: "#c8e6c9", text: "#2e7d32", radius: 99 },
+    avatar: { fill: "#e8eaf6", border: "#c5cae9", text: "#5c6bc0", radius: 99 },
+    search: { fill: "#ffffff", border: "#b9bdc9", text: "#8a8e9d", radius: 99 },
+    icon: { fill: "#f5f5f5", border: "#e0e0e0", text: "#757575", radius: 12 },
   };
   return { ...styles[type] };
 }
@@ -127,6 +151,12 @@ export function defaultLabel(type: BlockType) {
     card: "Título do card\nDescrição complementar",
     navbar: "MARCA  /  Item  Item  Item",
     divider: "",
+    list: "Item 1\nItem 2\nItem 3\nItem 4",
+    table: "Cabeçalho 1 | Cabeçalho 2 | Cabeçalho 3\nDado 1 | Dado 2 | Dado 3\nDado 4 | Dado 5 | Dado 6",
+    badge: "Status",
+    avatar: "AV",
+    search: "Buscar...",
+    icon: "★",
   };
   return labels[type];
 }
@@ -141,6 +171,12 @@ export function createBlock(type: BlockType, index: number, maxW = 1100, maxH = 
     card: [310, 160],
     navbar: [620, 60],
     divider: [440, 3],
+    list: [260, 160],
+    table: [480, 160],
+    badge: [90, 32],
+    avatar: [56, 56],
+    search: [320, 44],
+    icon: [48, 48],
   };
   const [rawW, h] = sizes[type];
   const w = Math.min(rawW, maxW - 64);
@@ -384,4 +420,212 @@ export function buildSvg(blocks: Block[], width: number, height: number): string
     })
     .join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#ffffff"/>${body}</svg>`;
+}
+
+// ---------------------------------------------------------------------------
+// Exportação HTML/CSS puro
+// ---------------------------------------------------------------------------
+
+function escapeHtml(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function blockToHtml(block: Block): string {
+  const s = block.style;
+  const base = `position:absolute;left:${block.x}px;top:${block.y}px;width:${block.w}px;height:${block.h}px;`;
+  const bg = `background:${s.fill};border:1px solid ${s.border};border-radius:${s.radius}px;`;
+  const txt = `color:${s.text};font-family:'DM Sans',system-ui,sans-serif;`;
+
+  if (block.type === "divider") {
+    return `<div style="${base}background:${s.fill};border:none;border-radius:0;"></div>`;
+  }
+  if (block.type === "image") {
+    return `<div style="${base}${bg}display:flex;align-items:center;justify-content:center;overflow:hidden;">
+  <svg width="${Math.min(40, block.w * 0.15)}" height="${Math.min(40, block.h * 0.15)}" viewBox="0 0 24 24" fill="none" stroke="${s.text}" stroke-width="2" opacity=".5">
+    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 15V3"/>
+  </svg>
+</div>`;
+  }
+  if (block.type === "button") {
+    return `<div style="${base}${bg}${txt}display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;cursor:pointer;">${escapeHtml(block.label)}</div>`;
+  }
+  if (block.type === "input") {
+    return `<div style="${base}${bg}${txt}display:flex;align-items:center;padding:0 14px;font-size:13px;">${escapeHtml(block.label)}</div>`;
+  }
+  if (block.type === "search") {
+    return `<div style="${base}${bg}${txt}display:flex;align-items:center;padding:0 14px;font-size:13px;gap:8px;">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${s.text}" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+  ${escapeHtml(block.label)}
+</div>`;
+  }
+  if (block.type === "badge") {
+    return `<div style="${base}${bg}${txt}display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.03em;padding:0 12px;">${escapeHtml(block.label)}</div>`;
+  }
+  if (block.type === "avatar") {
+    const initials = block.label.slice(0, 2).toUpperCase();
+    return `<div style="${base}${bg}${txt}display:flex;align-items:center;justify-content:center;font-size:${Math.round(block.w * 0.35)}px;font-weight:700;">${escapeHtml(initials)}</div>`;
+  }
+  if (block.type === "icon") {
+    return `<div style="${base}${bg}${txt}display:flex;align-items:center;justify-content:center;font-size:${Math.round(Math.min(block.w, block.h) * 0.5)}px;">${escapeHtml(block.label)}</div>`;
+  }
+  if (block.type === "heading") {
+    return `<div style="${base}${bg}${txt}display:flex;align-items:flex-start;padding:18px;font-size:28px;font-weight:700;line-height:1.2;white-space:pre-line;">${escapeHtml(block.label)}</div>`;
+  }
+  if (block.type === "list") {
+    const items = block.label.split("\n").filter(Boolean);
+    const lis = items.map((item) => `    <li style="padding:6px 0;border-bottom:1px solid ${s.border};font-size:13px;">${escapeHtml(item)}</li>`).join("\n");
+    return `<div style="${base}${bg}${txt}padding:12px 18px;font-size:13px;overflow:hidden;">
+  <ul style="margin:0;padding:0;list-style:none;">
+${lis}
+  </ul>
+</div>`;
+  }
+  if (block.type === "table") {
+    const rows = block.label.split("\n").filter(Boolean);
+    const headerCells = rows[0]?.split("|").map((c) => c.trim()) ?? [];
+    const thead = headerCells.map((c) => `      <th style="padding:8px 12px;text-align:left;border-bottom:2px solid ${s.border};font-size:12px;font-weight:700;color:${s.text};">${escapeHtml(c)}</th>`).join("");
+    const bodyRows = rows.slice(1).map((row) => {
+      const cells = row.split("|").map((c) => c.trim());
+      const tds = cells.map((c) => `      <td style="padding:8px 12px;border-bottom:1px solid ${s.border};font-size:13px;">${escapeHtml(c)}</td>`).join("");
+      return `    <tr>\n${tds}\n    </tr>`;
+    }).join("\n");
+    return `<div style="${base}${bg}${txt}padding:0;font-size:13px;overflow:hidden;">
+  <table style="width:100%;border-collapse:collapse;">
+    <thead><tr>\n${thead}\n    </tr></thead>
+    <tbody>\n${bodyRows}\n    </tbody>
+  </table>
+</div>`;
+  }
+  if (block.type === "card") {
+    const lines = block.label.split("\n");
+    return `<div style="${base}${bg}${txt}padding:18px;display:flex;flex-direction:column;justify-content:center;">
+  <div style="font-size:15px;font-weight:700;margin-bottom:4px;">${escapeHtml(lines[0] ?? "")}</div>
+  ${lines.length > 1 ? `<div style="font-size:12px;opacity:.7;">${escapeHtml(lines.slice(1).join(" "))}</div>` : ""}
+</div>`;
+  }
+  if (block.type === "navbar") {
+    const items = block.label.split(/\s{2,}/);
+    return `<div style="${base}${bg}${txt}display:flex;align-items:center;padding:0 24px;gap:24px;font-size:13px;font-weight:600;">
+  ${items.map((item, i) => `<span${i === 0 ? ' style="font-weight:800;margin-right:auto;"' : ""}>${escapeHtml(item)}</span>`).join("\n  ")}
+</div>`;
+  }
+  // text
+  return `<div style="${base}${bg}${txt}display:flex;align-items:flex-start;padding:14px 18px;font-size:14px;line-height:1.5;white-space:pre-line;">${escapeHtml(block.label)}</div>`;
+}
+
+export function buildHtml(blocks: Block[], width: number, height: number, title: string): string {
+  const inner = blocks.map((b) => `    ${blockToHtml(b)}`).join("\n");
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #f4f4f8; display: flex; justify-content: center; padding: 32px; font-family: 'DM Sans', system-ui, sans-serif; }
+    .artboard {
+      position: relative;
+      width: ${width}px;
+      height: ${height}px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div class="artboard">
+${inner}
+  </div>
+</body>
+</html>`;
+}
+
+// ---------------------------------------------------------------------------
+// Exportação Tailwind CSS
+// ---------------------------------------------------------------------------
+
+function blockToTailwind(block: Block): string {
+  const pos = `absolute left-[${block.x}px] top-[${block.y}px] w-[${block.w}px] h-[${block.h}px]`;
+  const bg = `bg-[${block.style.fill}] border border-[${block.style.border}]`;
+  const r = `rounded-[${block.style.radius}px]`;
+  const txt = `text-[${block.style.text}]`;
+
+  if (block.type === "divider") return `<div class="${pos} bg-[${block.style.fill}]" />`;
+  if (block.type === "image") return `<div class="${pos} ${bg} ${r} flex items-center justify-center overflow-hidden">
+  <svg class="w-10 h-10 opacity-50" viewBox="0 0 24 24" fill="none" stroke="${block.style.text}" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 15V3"/></svg>
+</div>`;
+  if (block.type === "button") return `<div class="${pos} ${bg} ${r} ${txt} flex items-center justify-center text-sm font-semibold cursor-pointer">${escapeHtml(block.label)}</div>`;
+  if (block.type === "input") return `<div class="${pos} ${bg} ${r} ${txt} flex items-center px-3.5 text-[13px]">${escapeHtml(block.label)}</div>`;
+  if (block.type === "search") return `<div class="${pos} ${bg} ${r} ${txt} flex items-center px-3.5 text-[13px] gap-2">
+  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="${block.style.text}" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+  ${escapeHtml(block.label)}
+</div>`;
+  if (block.type === "badge") return `<div class="${pos} ${bg} ${r} ${txt} inline-flex items-center justify-center text-[11px] font-bold tracking-wide px-3">${escapeHtml(block.label)}</div>`;
+  if (block.type === "avatar") {
+    const initials = block.label.slice(0, 2).toUpperCase();
+    return `<div class="${pos} ${bg} ${r} ${txt} flex items-center justify-center text-[35%] font-bold">${escapeHtml(initials)}</div>`;
+  }
+  if (block.type === "icon") return `<div class="${pos} ${bg} ${r} ${txt} flex items-center justify-center text-[50%]">${escapeHtml(block.label)}</div>`;
+  if (block.type === "heading") return `<div class="${pos} ${bg} ${r} ${txt} flex items-start p-[18px] text-[28px] font-bold leading-tight whitespace-pre-line">${escapeHtml(block.label)}</div>`;
+  if (block.type === "list") {
+    const items = block.label.split("\n").filter(Boolean);
+    const lis = items.map((item) => `    <li class="py-1.5 border-b text-[13px]" style="border-color:${block.style.border}">${escapeHtml(item)}</li>`).join("\n");
+    return `<div class="${pos} ${bg} ${r} ${txt} p-3 text-[13px] overflow-hidden">
+  <ul class="m-0 p-0 list-none">
+${lis}
+  </ul>
+</div>`;
+  }
+  if (block.type === "table") {
+    const rows = block.label.split("\n").filter(Boolean);
+    const headerCells = rows[0]?.split("|").map((c) => c.trim()) ?? [];
+    const ths = headerCells.map((c) => `      <th class="px-3 py-2 text-left text-xs font-bold" style="border-bottom:2px solid ${block.style.border};color:${block.style.text}">${escapeHtml(c)}</th>`).join("");
+    const bodyRows = rows.slice(1).map((row) => {
+      const cells = row.split("|").map((c) => c.trim());
+      const tds = cells.map((c) => `      <td class="px-3 py-2 text-[13px]" style="border-bottom:1px solid ${block.style.border}">${escapeHtml(c)}</td>`).join("");
+      return `    <tr>\n${tds}\n    </tr>`;
+    }).join("\n");
+    return `<div class="${pos} ${bg} ${r} ${txt} p-0 text-[13px] overflow-hidden">
+  <table class="w-full border-collapse">
+    <thead><tr>\n${ths}\n    </tr></thead>
+    <tbody>\n${bodyRows}\n    </tbody>
+  </table>
+</div>`;
+  }
+  if (block.type === "card") {
+    const lines = block.label.split("\n");
+    return `<div class="${pos} ${bg} ${r} ${txt} p-[18px] flex flex-col justify-center">
+  <div class="text-[15px] font-bold mb-1">${escapeHtml(lines[0] ?? "")}</div>
+  ${lines.length > 1 ? `<div class="text-xs opacity-70">${escapeHtml(lines.slice(1).join(" "))}</div>` : ""}
+</div>`;
+  }
+  if (block.type === "navbar") {
+    const items = block.label.split(/\s{2,}/);
+    return `<div class="${pos} ${bg} ${r} ${txt} flex items-center px-6 gap-6 text-[13px] font-semibold">
+  ${items.map((item, i) => `<span class="${i === 0 ? "font-extrabold mr-auto" : ""}">${escapeHtml(item)}</span>`).join("\n  ")}
+</div>`;
+  }
+  // text
+  return `<div class="${pos} ${bg} ${r} ${txt} flex items-start p-3.5 text-[14px] leading-relaxed whitespace-pre-line">${escapeHtml(block.label)}</div>`;
+}
+
+export function buildTailwind(blocks: Block[], width: number, height: number, title: string): string {
+  const inner = blocks.map((b) => `    ${blockToTailwind(b)}`).join("\n");
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex justify-center p-8 font-sans">
+  <div class="relative bg-white rounded-xl shadow-lg overflow-hidden" style="width:${width}px;height:${height}px;">
+${inner}
+  </div>
+</body>
+</html>`;
 }

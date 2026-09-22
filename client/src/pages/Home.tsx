@@ -14,6 +14,7 @@ import {
   Layers3,
   LayoutTemplate,
   Link2,
+  List,
   Lock,
   Maximize2,
   Minus,
@@ -31,11 +32,15 @@ import {
   Smartphone,
   Sparkles,
   Square,
+  Star,
   Tablet,
+  Tags,
+  Table,
   Trash2,
   Type,
   Undo2,
   Upload,
+  UserCircle,
   X,
 } from "lucide-react";
 import { ChangeEvent, PointerEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -48,7 +53,9 @@ import {
   BlockStyle,
   BlockType,
   blockTypeLabel,
+  buildHtml,
   buildSvg,
+  buildTailwind,
   clamp,
   createBlock,
   Device,
@@ -81,10 +88,16 @@ const componentCatalog: Array<{
   { type: "text", label: "Texto", hint: "Parágrafo", icon: AlignLeft, accent: "blue" },
   { type: "button", label: "Botão", hint: "Ação", icon: Square, accent: "orange" },
   { type: "input", label: "Campo", hint: "Input", icon: MoreHorizontal, accent: "pink" },
+  { type: "search", label: "Busca", hint: "Campo de busca", icon: Search, accent: "blue" },
   { type: "image", label: "Imagem", hint: "Placeholder", icon: ImageIcon, accent: "mint" },
   { type: "card", label: "Card", hint: "Container", icon: LayoutTemplate, accent: "yellow" },
   { type: "navbar", label: "Navegação", hint: "Menu superior", icon: Link2, accent: "lavender" },
   { type: "divider", label: "Divisor", hint: "Linha", icon: Minus, accent: "blue" },
+  { type: "list", label: "Lista", hint: "Itens", icon: List, accent: "mint" },
+  { type: "table", label: "Tabela", hint: "Dados", icon: Table, accent: "yellow" },
+  { type: "badge", label: "Badge", hint: "Tag de status", icon: Tags, accent: "orange" },
+  { type: "avatar", label: "Avatar", hint: "Foto/perfil", icon: UserCircle, accent: "lavender" },
+  { type: "icon", label: "Ícone", hint: "Placeholder de ícone", icon: Star, accent: "pink" },
 ];
 
 const starterBlocks: Block[] = [
@@ -727,6 +740,18 @@ export default function Home() {
     toast.success("SVG exportado");
   }
 
+  function exportHtml() {
+    download(downloadFilename(projectTitle, "html"), buildHtml(blocks, ARTBOARD.width, ARTBOARD.height, projectTitle), "text/html");
+    setIsExportOpen(false);
+    toast.success("HTML exportado");
+  }
+
+  function exportTailwind() {
+    download(downloadFilename(projectTitle, "html"), buildTailwind(blocks, ARTBOARD.width, ARTBOARD.height, projectTitle), "text/html");
+    setIsExportOpen(false);
+    toast.success("HTML+Tailwind exportado");
+  }
+
   function exportPng() {
     exportPngFromBlocks(blocksRef.current, ARTBOARD.width, ARTBOARD.height, 0, 0, downloadFilename(projectTitle, "png"));
   }
@@ -971,6 +996,8 @@ export default function Home() {
               <button onClick={exportPng}><ImageIcon size={15} /><span>Exportar PNG</span><small>imagem</small></button>
               {selectedIds.length > 0 && <button onClick={exportSelectionPng}><ImageIcon size={15} /><span>Seleção PNG</span><small>{selectedIds.length} bloco(s)</small></button>}
               <button onClick={exportSvg}><FileText size={15} /><span>Exportar SVG</span><small>vetor</small></button>
+              <button onClick={exportHtml}><FileText size={15} /><span>Exportar HTML</span><small>CSS puro</small></button>
+              <button onClick={exportTailwind}><FileText size={15} /><span>Exportar Tailwind</span><small>HTML+CSS</small></button>
               <button onClick={exportJson}><FileJson size={15} /><span>Exportar JSON</span><small>editável</small></button>
             </div>}
           </div>
@@ -1027,7 +1054,16 @@ export default function Home() {
                 {blocks.map((block) => <div key={block.id} className={`wire-block block-${block.type} ${selectedIds.includes(block.id) && !isPreview ? "selected" : ""}`} style={{ left: block.x, top: block.y, width: block.w, height: block.h, backgroundColor: block.style.fill, borderColor: block.style.border, color: block.style.text, borderRadius: block.style.radius }} onPointerDown={(event) => handleBlockPointerDown(event, block)} onDoubleClick={() => { if (!isPreview) startInlineEdit(block.id); }}>
                   {editingBlockId === block.id ? <textarea className="inline-edit" autoFocus value={editingText} onChange={(event) => setEditingText(event.target.value)} onBlur={commitInlineEdit} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); commitInlineEdit(); } if (event.key === "Escape") cancelInlineEdit(); }} style={{ fontSize: block.type === "heading" ? 30 : block.type === "button" ? 14 : 16, fontWeight: block.type === "heading" ? 700 : 500, color: block.style.text, textAlign: block.type === "button" ? "center" : "left" }} aria-label="Editar conteúdo do bloco" /> : <>
                   {selectedIds.length === 1 && selectedId === block.id && !isPreview && <div className="selection-label"><span>{blockTypeLabel(block.type)}</span><span>{Math.round(block.w)} × {Math.round(block.h)}</span></div>}
-                  {block.type === "image" ? <><div className="image-sun" /><div className="image-mountains" /><span className="block-content image-label">{block.label}</span></> : block.type === "input" ? <><span className="input-dot" /> <span className="block-content">{block.label}</span></> : block.type === "divider" ? null : <span className="block-content">{block.label}</span>}
+                  {block.type === "image" ? <><div className="image-sun" /><div className="image-mountains" /><span className="block-content image-label">{block.label}</span></>
+                    : block.type === "input" ? <><span className="input-dot" /> <span className="block-content">{block.label}</span></>
+                    : block.type === "divider" ? null
+                    : block.type === "search" ? <div className="block-content search-content"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={block.style.text} strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>{block.label}</div>
+                    : block.type === "badge" ? <div className="block-content badge-content">{block.label}</div>
+                    : block.type === "avatar" ? <div className="block-content avatar-content">{block.label.slice(0, 2).toUpperCase()}</div>
+                    : block.type === "icon" ? <div className="block-content icon-content">{block.label}</div>
+                    : block.type === "list" ? <div className="block-content list-content">{block.label.split("\n").filter(Boolean).map((item, i) => <div key={i} className="list-item"><span className="list-bullet" />{item}</div>)}</div>
+                    : block.type === "table" ? (() => { const rows = block.label.split("\n").filter(Boolean); const headers = rows[0]?.split("|").map((c) => c.trim()) ?? []; return <div className="block-content table-content"><div className="table-head">{headers.map((h, i) => <span key={i}>{h}</span>)}</div>{rows.slice(1).map((row, ri) => <div key={ri} className="table-row">{row.split("|").map((c, ci) => <span key={ci}>{c.trim()}</span>)}</div>)}</div>; })()
+                    : <span className="block-content">{block.label}</span>}
                   {selectedIds.length === 1 && selectedId === block.id && !isPreview && <><span className="resize-handle handle-se" onPointerDown={(event) => { event.stopPropagation(); setResizeState({ id: block.id, startX: event.clientX, startY: event.clientY, origW: block.w, origH: block.h, origX: block.x, origY: block.y, corner: "se" }); }} /><span className="resize-handle handle-sw" onPointerDown={(event) => { event.stopPropagation(); setResizeState({ id: block.id, startX: event.clientX, startY: event.clientY, origW: block.w, origH: block.h, origX: block.x, origY: block.y, corner: "sw" }); }} /></>}
                 </>}
                 </div>)}

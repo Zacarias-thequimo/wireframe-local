@@ -5,7 +5,7 @@ Editor visual local e leve para desenhar wireframes de interfaces sem depender d
 ## O que está incluído
 
 - Canvas de wireframe com grade, zoom e tamanhos desktop, tablet e mobile.
-- Biblioteca de componentes: título, texto, botão, campo, imagem, card, navegação e divisor.
+- Biblioteca de componentes: título, texto, botão, campo, imagem, card, navegação, divisor, lista, tabela, badge, avatar, busca e ícone.
 - Inserção por clique ou arraste a partir da biblioteca.
 - Seleção simples e múltipla (`Shift+clique`, `Cmd/Ctrl + A`), com arraste, setas, duplicação e remoção em grupo.
 - Alinhamento ao canvas (1 bloco) ou dentro do grupo (2+ blocos), mais distribuição horizontal/vertical (3+ blocos).
@@ -18,7 +18,7 @@ Editor visual local e leve para desenhar wireframes de interfaces sem depender d
 - Modo Design e modo Preview.
 - Salvamento automático no `localStorage` do navegador.
 - Importação de projetos JSON exportados pelo próprio editor.
-- Exportação em PNG, SVG e JSON editável.
+- Exportação em PNG, SVG, JSON, HTML/CSS puro e HTML+Tailwind CSS.
 - Atalhos de teclado para acelerar o fluxo de trabalho.
 
 ## Como executar localmente
@@ -84,6 +84,8 @@ O comando `pnpm check` valida o TypeScript. O comando `pnpm test` executa os tes
 - **PNG:** imagem raster em resolução 2x, adequada para compartilhar rapidamente.
 - **Seleção PNG:** exporta apenas os blocos selecionados com padding, útil para peças específicas.
 - **SVG:** arquivo vetorial leve, com textos e formas preservados.
+- **HTML/CSS puro:** código HTML semântico com CSS inline, pronto para copiar e colar em qualquer projeto. Usa fonte DM Sans do Google Fonts.
+- **HTML+Tailwind CSS:** código HTML com classes utilitárias do Tailwind (via CDN), ideal para projetos que usam a stack moderna.
 - **JSON:** arquivo editável com todas as páginas, blocos, posições e estilos. Pode ser importado de volta em outro navegador ou cópia local do projeto.
 
 Os arquivos são gerados diretamente pelo navegador usando a API de download. Nenhum arquivo é enviado a um servidor.

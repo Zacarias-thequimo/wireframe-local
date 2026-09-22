@@ -4,7 +4,9 @@ import {
   applyPatches,
   ARTBOARDS,
   Block,
+  buildHtml,
   buildSvg,
+  buildTailwind,
   clamp,
   createBlock,
   distributePatches,
@@ -165,5 +167,75 @@ describe("buildSvg", () => {
   it("divider vira rect simples", () => {
     const svg = buildSvg([block({ type: "divider", h: 1 })], 1100, 700);
     expect(svg).not.toContain("<text");
+  });
+});
+
+describe("buildHtml", () => {
+  it("gera HTML válido com blocos", () => {
+    const html = buildHtml(
+      [block({ type: "heading", label: "Olá" }), block({ type: "button", label: "Clique" })],
+      1100,
+      700,
+      "Meu Projeto",
+    );
+    expect(html).toContain("<!DOCTYPE html>");
+    expect(html).toContain("<title>Meu Projeto</title>");
+    expect(html).toContain("Olá");
+    expect(html).toContain("Clique");
+    expect(html).toContain('class="artboard"');
+  });
+  it("escapa HTML nos labels", () => {
+    const html = buildHtml([block({ label: "<script>alert(1)</script>" })], 800, 600, "X");
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("&lt;script&gt;");
+  });
+  it("renderiza componentes novos (list, table, badge, avatar, search, icon)", () => {
+    const blocks: Block[] = [
+      block({ type: "list", label: "A\nB" }),
+      block({ type: "table", label: "H1 | H2\nD1 | D2" }),
+      block({ type: "badge", label: "Ativo" }),
+      block({ type: "avatar", label: "AB" }),
+      block({ type: "search", label: "Buscar..." }),
+      block({ type: "icon", label: "★" }),
+    ];
+    const html = buildHtml(blocks, 800, 600, "Teste");
+    expect(html).toContain("<ul");
+    expect(html).toContain("<table");
+    expect(html).toContain("Ativo");
+    expect(html).toContain("AB");
+    expect(html).toContain("Buscar...");
+    expect(html).toContain("★");
+  });
+});
+
+describe("buildTailwind", () => {
+  it("gera HTML com Tailwind CDN", () => {
+    const html = buildTailwind(
+      [block({ type: "heading", label: "TW" })],
+      1100,
+      700,
+      "Projeto TW",
+    );
+    expect(html).toContain("tailwindcss.com");
+    expect(html).toContain("Projeto TW");
+    expect(html).toContain("TW");
+    expect(html).toContain("absolute");
+  });
+  it("escapa HTML nos labels", () => {
+    const html = buildTailwind([block({ label: "<b>x</b>" })], 800, 600, "Y");
+    expect(html).toContain("&lt;b&gt;");
+  });
+});
+
+describe("createBlock novos tipos", () => {
+  it("cabe no artboard para todos os tipos", () => {
+    const types = ["list", "table", "badge", "avatar", "search", "icon"] as const;
+    for (const type of types) {
+      const b = createBlock(type, 0, ARTBOARDS.desktop.width, ARTBOARDS.desktop.height);
+      expect(b.x + b.w).toBeLessThanOrEqual(ARTBOARDS.desktop.width);
+      expect(b.y + b.h).toBeLessThanOrEqual(ARTBOARDS.desktop.height);
+      expect(b.label).toBeTruthy();
+      expect(b.style).toBeDefined();
+    }
   });
 });
