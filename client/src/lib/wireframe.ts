@@ -351,6 +351,24 @@ export function applyPatches(all: Block[], patches: Record<string, { x?: number;
 }
 
 /**
+ * Contém todos os blocos dentro do artboard (usado ao trocar de dispositivo).
+ * Reduz w/h que excedam o artboard e puxa x/y para dentro. Não reordena nada.
+ */
+export function fitBlocksToArtboard(all: Block[], artW: number, artH: number): Block[] {
+  return all.map((b) => {
+    const w = Math.min(b.w, artW);
+    const h = Math.min(b.h, artH);
+    return {
+      ...b,
+      w,
+      h,
+      x: clamp(b.x, 0, Math.max(0, artW - w)),
+      y: clamp(b.y, 0, Math.max(0, artH - h)),
+    };
+  });
+}
+
+/**
  * Distribui 3+ blocos com espaçamento igual entre o primeiro e o último
  * (extremos fixos, ordenados por posição no eixo).
  */

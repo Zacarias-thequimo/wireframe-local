@@ -12,6 +12,7 @@ import {
   distributePatches,
   downloadFilename,
   escapeXml,
+  fitBlocksToArtboard,
   normalizeBlock,
   normalizeHex,
   normalizeProject,
@@ -237,5 +238,25 @@ describe("createBlock novos tipos", () => {
       expect(b.label).toBeTruthy();
       expect(b.style).toBeDefined();
     }
+  });
+});
+
+describe("fitBlocksToArtboard", () => {
+  it("mantém blocos pequenos intactos", () => {
+    const b = block({ id: "a", x: 10, y: 20, w: 100, h: 50 });
+    expect(fitBlocksToArtboard([b], 390, 844)).toEqual([b]);
+  });
+  it("reduz blocos maiores que o artboard (ex.: navbar desktop no mobile)", () => {
+    const b = block({ id: "nav", x: 52, y: 38, w: 996, h: 64 });
+    const [fitted] = fitBlocksToArtboard([b], ARTBOARDS.mobile.width, ARTBOARDS.mobile.height);
+    expect(fitted.w).toBe(390);
+    expect(fitted.x).toBe(0);
+    expect(fitted.y).toBe(38);
+  });
+  it("puxa blocos fora da área para dentro", () => {
+    const b = block({ id: "a", x: 900, y: 800, w: 100, h: 50 });
+    const [fitted] = fitBlocksToArtboard([b], 390, 844);
+    expect(fitted.x + fitted.w).toBeLessThanOrEqual(390);
+    expect(fitted.y + fitted.h).toBeLessThanOrEqual(844);
   });
 });

@@ -61,6 +61,7 @@ import {
   Device,
   distributePatches,
   downloadFilename,
+  fitBlocksToArtboard,
   makeId,
   normalizeHex,
   normalizeProject,
@@ -281,6 +282,15 @@ export default function Home() {
     if (!query) return componentCatalog;
     return componentCatalog.filter((item) => item.label.toLowerCase().includes(query) || item.hint.toLowerCase().includes(query) || item.type.toLowerCase().includes(query));
   }, [searchQuery]);
+
+  // Marcas da régua acompanham a largura do artboard ativo (antes eram
+  // fixas 0..1000 mesmo no mobile de 390px).
+  const rulerTicks = useMemo(() => {
+    const ticks: number[] = [];
+    for (let value = 0; value < ARTBOARDS[device].width; value += 200) ticks.push(value);
+    if (ticks[ticks.length - 1] !== ARTBOARDS[device].width) ticks.push(ARTBOARDS[device].width);
+    return ticks;
+  }, [device]);
 
   // Espaço segurado ativa modo Pan (mão).
   useEffect(() => {
@@ -885,8 +895,26 @@ export default function Home() {
   }
 
   function updateDevice(nextDevice: Device) {
+    if (nextDevice === device) return;
+    const dims = ARTBOARDS[nextDevice];
     setDevice(nextDevice);
-    setZoom(ARTBOARDS[nextDevice].zoom);
+    setZoom(dims.zoom);
+    // Reseta o pan: o deslocamento do artboard anterior deixava o novo
+    // artboard fora de vista (parecia "bugado" ao trocar para mobile).
+    setPanOffset({ x: 0, y: 0 });
+    // Contém os blocos no novo artboard (ex.: navbar de 996px no mobile
+    // de 390px). É desfazível com Ctrl+Z pois usa applyBlocks.
+    const current = blocksRef.current;
+    const fitted = fitBlocksToArtboard(current, dims.width, dims.height);
+    const adjusted = fitted.filter(
+      (b, i) => b.x !== current[i].x || b.y !== current[i].y || b.w !== current[i].w || b.h !== current[i].h,
+    ).length;
+    if (adjusted > 0) {
+      applyBlocks(fitted);
+      toast.success(`Layout ajustado ao ${nextDevice}`, {
+        description: `${adjusted} bloco(s) contido(s) no artboard. Desfaça com Ctrl+Z.`,
+      });
+    }
   }
 
   function switchPage(pageId: string) {
@@ -1041,13 +1069,13 @@ export default function Home() {
                 <button className={`tool-button ${showGrid ? "active" : ""}`} onClick={() => setShowGrid((show) => !show)} title="Alternar grade"><Grid3X3 size={15} /></button>
               </>}
               <span className="toolbar-divider" />
-              <button className="tool-button" onClick={() => setZoom((value) => Math.max(40, value - 5))}><Minus size={15} /></button>
+              <button className="tool-button" onClick={() => setZoom((value) => Math.max(25, value - 5))}><Minus size={15} /></button>
               <span className="zoom-value">{zoom}%</span>
-              <button className="tool-button" onClick={() => setZoom((value) => Math.min(110, value + 5))}><Plus size={15} /></button>
+              <button className="tool-button" onClick={() => setZoom((value) => Math.min(200, value + 5))}><Plus size={15} /></button>
             </div>
           </div>
           <div className={`canvas-scroller device-${device}`}>
-            <div className="canvas-ruler-top"><span>0</span><span>200</span><span>400</span><span>600</span><span>800</span><span>1000</span></div>
+            <div className="canvas-ruler-top" style={{ maxWidth: ARTBOARD.width }}>{rulerTicks.map((tick) => <span key={tick}>{tick}</span>)}</div>
             <div className="canvas-stage-wrap" style={{ width: ARTBOARD.width * (zoom / 100), height: ARTBOARD.height * (zoom / 100), transform: `translate(${panOffset.x}px, ${panOffset.y}px)` }}>
               <div ref={artboardRef} className={`artboard ${showGrid && !isPreview ? "with-grid" : ""}`} style={{ width: ARTBOARD.width, height: ARTBOARD.height, transform: `scale(${zoom / 100})` }} onPointerDown={() => { if (!isPreview) setSelectedIds([]); }} onDragOver={(event) => { if (!isPreview) event.preventDefault(); }} onDrop={(event) => { if (isPreview) return; const type = event.dataTransfer.getData("application/wireframe-type") as BlockType; if (type) addBlock(type); }}>
                 {!isPreview && <div className="artboard-meta"><span>{projectTitle.toUpperCase()} / {device.toUpperCase()}</span><span>{ARTBOARD.width} × {ARTBOARD.height}</span></div>}

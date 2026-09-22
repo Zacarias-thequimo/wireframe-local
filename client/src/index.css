@@ -104,11 +104,15 @@ button:disabled { opacity: .38; cursor: not-allowed; }
 .export-menu small { font-size: 9px; color: #aaaab5; }
 @keyframes pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-.workspace { height: calc(100vh - 68px); display: grid; grid-template-columns: 253px minmax(0, 1fr) 275px; }
+.workspace { height: calc(100vh - 68px); display: grid; grid-template-columns: 253px minmax(0, 1fr) 275px; position: relative; }
 .workspace.hide-left { grid-template-columns: minmax(0, 1fr) 275px; }
 .workspace.hide-right { grid-template-columns: 253px minmax(0, 1fr); }
 .workspace.hide-left.hide-right, .workspace.is-preview { grid-template-columns: minmax(0, 1fr); }
-.sidebar-rail { width: 34px; justify-self: center; align-self: start; margin-top: 18px; display: inline-flex; justify-content: center; align-items: center; width: 34px; height: 34px; border: 1px solid #e7e7ee; border-radius: 8px; background: #fff; color: #8d8f9a; box-shadow: 0 4px 12px rgba(50,49,69,.08); }
+/* Rails flutuantes fora do fluxo do grid: antes eram filhos do grid e
+   ocupavam uma coluna implícita, quebrando o layout ao fechar um painel. */
+.sidebar-rail { position: absolute; top: 80px; z-index: 25; display: inline-flex; justify-content: center; align-items: center; width: 34px; height: 34px; border: 1px solid #e7e7ee; border-radius: 8px; background: #fff; color: #8d8f9a; box-shadow: 0 4px 12px rgba(50,49,69,.08); }
+.sidebar-rail.left { left: 12px; }
+.sidebar-rail.right { right: 12px; }
 .sidebar-rail:hover { color: #5549af; border-color: #c9c2f5; background: #faf9ff; }
 .search-clear { display: inline-flex; padding: 3px; border-radius: 5px; background: transparent; color: #a4a6b1; }
 .search-clear:hover { color: #5549af; background: #efedfd; }
@@ -288,8 +292,11 @@ button:disabled { opacity: .38; cursor: not-allowed; }
   .import-fab { right: 267px; }
 }
 @media (max-width: 900px) {
-  .workspace { grid-template-columns: 0 minmax(0, 1fr) 245px; }
-  .left-sidebar { display: none; }
+  .workspace, .workspace.hide-left { grid-template-columns: minmax(0, 1fr) 245px; }
+  .workspace.hide-right, .workspace.hide-left.hide-right { grid-template-columns: minmax(0, 1fr); }
+  /* Biblioteca vira drawer sobre o canvas em vez de sumir (o botão de
+     reabrir ficava sem efeito pois o aside tinha display:none). */
+  .left-sidebar { position: absolute; left: 0; top: 0; bottom: 0; width: 262px; z-index: 40; box-shadow: 18px 0 40px rgba(35,33,65,.14); }
   .topbar-center { position: static; transform: none; margin-left: auto; margin-right: 10px; }
   .topbar-left { min-width: 0; }
   .project-name-wrap, .header-divider { display: none; }
@@ -302,8 +309,9 @@ button:disabled { opacity: .38; cursor: not-allowed; }
   .topbar { padding: 0 12px; }
   .brand-subtitle, .topbar-center, .button-secondary, .avatar-button, .icon-button, .header-divider.small { display: none; }
   .topbar-actions { margin-left: auto; }
-  .workspace { grid-template-columns: 1fr; }
-  .right-sidebar { display: none; }
+  .workspace, .workspace.hide-left, .workspace.hide-right, .workspace.hide-left.hide-right { grid-template-columns: minmax(0, 1fr); }
+  /* Inspetor vira drawer sobre o canvas em telas pequenas. */
+  .right-sidebar { position: absolute; right: 0; top: 0; bottom: 0; width: 262px; z-index: 40; box-shadow: -18px 0 40px rgba(35,33,65,.14); }
   .canvas-toolbar { height: 55px; flex-basis: 55px; }
   .breadcrumb { max-width: 130px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .device-switcher button { width: 25px; }
@@ -320,7 +328,3 @@ button:disabled { opacity: .38; cursor: not-allowed; }
 /* Preview ocupa sempre a largura total, mesmo com as media queries acima */
 .workspace.is-preview { grid-template-columns: minmax(0, 1fr) !important; }
 .workspace.is-preview .sidebar-rail { display: none; }
-@media (max-width: 900px) {
-  .workspace.hide-right { grid-template-columns: minmax(0, 1fr); }
-  .workspace.hide-right .right-sidebar { display: none; }
-}
