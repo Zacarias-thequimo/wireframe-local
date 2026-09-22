@@ -135,7 +135,7 @@ O projeto inclui um servidor [MCP](https://modelcontextprotocol.io) em `mcp/serv
 
 - `list_projects` — lista os projetos no diretório (default: `./wireframe-projects`, configurável via `WIREFRAME_PROJECTS_DIR`)
 - `read_project` / `create_project` — ler e criar projetos no formato do editor (`version: 1`, blocos `{id, type, x, y, w, h, label, style}`)
-- `add_block` / `update_block` / `remove_block` — gerir blocos na página ativa
+- `add_block` / `update_block` / `remove_block` — gerir blocos na página ativa (14 tipos: heading, text, button, input, image, card, navbar, divider, list, table, badge, avatar, search, icon)
 - `add_page` / `set_active_page` — páginas múltiplas
 - `render_svg` — preview SVG sem browser
 - `delete_project` — apaga (exige `confirm: true`)

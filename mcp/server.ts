@@ -34,6 +34,12 @@ const BLOCK_TYPES = [
   "card",
   "navbar",
   "divider",
+  "list",
+  "table",
+  "badge",
+  "avatar",
+  "search",
+  "icon",
 ] as const;
 type BlockType = (typeof BLOCK_TYPES)[number];
 
@@ -77,6 +83,12 @@ const DEFAULT_SIZE: Record<BlockType, { w: number; h: number }> = {
   card: { w: 320, h: 200 },
   navbar: { w: 996, h: 64 },
   divider: { w: 420, h: 2 },
+  list: { w: 260, h: 160 },
+  table: { w: 480, h: 160 },
+  badge: { w: 90, h: 32 },
+  avatar: { w: 56, h: 56 },
+  search: { w: 320, h: 44 },
+  icon: { w: 48, h: 48 },
 };
 
 /* ---------- helpers de filesystem (confina ao PROJECTS_DIR) ---------- */
@@ -251,7 +263,7 @@ const TOOLS = [
   {
     name: "create_project",
     description:
-      "Cria um novo projeto wireframe. 'blocks' e uma lista opcional de blocos (type obrigatorio: heading|text|button|input|image|card|navbar|divider; x/y/w/h/label/style opcionais). Opcionalmente cria paginas multiplas.",
+      "Cria um novo projeto wireframe. 'blocks' e uma lista opcional de blocos (type obrigatorio: heading|text|button|input|image|card|navbar|divider|list|table|badge|avatar|search|icon; x/y/w/h/label/style opcionais). Opcionalmente cria paginas multiplas.",
     inputSchema: {
       type: "object",
       properties: {
