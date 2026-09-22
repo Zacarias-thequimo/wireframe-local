@@ -8,6 +8,7 @@ Editor visual local e leve para desenhar wireframes de interfaces sem depender d
 - Biblioteca de componentes: título, texto, botão, campo, imagem, card, navegação, divisor, lista, tabela, badge, avatar, busca e ícone.
 - Inserção por clique ou arraste a partir da biblioteca.
 - Seleção simples e múltipla (`Shift+clique`, `Cmd/Ctrl + A`), com arraste, setas, duplicação e remoção em grupo.
+- Edição de aparência em grupo: com 2+ blocos selecionados, fundo, contorno, texto e raio aplicam-se a todos de uma vez (uma entrada no histórico).
 - Alinhamento ao canvas (1 bloco) ou dentro do grupo (2+ blocos), mais distribuição horizontal/vertical (3+ blocos).
 - Camadas clicáveis e reordenáveis por arraste, com seleção múltipla por `Shift+clique`.
 - Redimensionamento real pelos cantos inferior-direito e inferior-esquerdo.
@@ -77,7 +78,14 @@ O comando `pnpm check` valida o TypeScript. O comando `pnpm test` executa os tes
 | `V` | Ativar ferramenta de seleção |
 | `H` | Ativar ferramenta de mão |
 | `G` | Mostrar ou ocultar grade |
+| `?` | Abrir a documentação |
 | `Esc` | Limpar a seleção / fechar edição inline |
+
+## Documentação in-app
+
+O botão **livro** na barra superior (ou a tecla `?`) abre a documentação dentro do editor: primeiros passos,
+lista de componentes, tabela de atalhos, seleção múltipla, exportação, páginas e salvamento. Fecha com `Esc`,
+no `X` ou clicando fora.
 
 ## Exportação
 

@@ -1,6 +1,7 @@
 import {
   AlignLeft,
   ArrowDownToLine,
+  BookOpen,
   ChevronDown,
   Circle,
   Copy,
@@ -45,6 +46,7 @@ import {
 } from "lucide-react";
 import { ChangeEvent, PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import DocsModal from "@/components/DocsModal";
 import {
   alignPatches,
   applyPatches,
@@ -189,6 +191,7 @@ export default function Home() {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
   const [isSaved, setIsSaved] = useState(true);
+  const [docsOpen, setDocsOpen] = useState(false);
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -217,6 +220,7 @@ export default function Home() {
   } | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const artboardRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const exportWrapRef = useRef<HTMLDivElement>(null);
 
@@ -266,6 +270,8 @@ export default function Home() {
   editingTextRef.current = editingText;
   const spaceHeldRef = useRef(spaceHeld);
   spaceHeldRef.current = spaceHeld;
+  const docsOpenRef = useRef(docsOpen);
+  docsOpenRef.current = docsOpen;
   const panRef = useRef(panOffset);
   panRef.current = panOffset;
 
@@ -312,9 +318,11 @@ export default function Home() {
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
   }, []);
 
-  // Ctrl+roda do mouse para zoom.
+  // Ctrl+roda do mouse para zoom. O listener fica no scroller (área toda
+  // do canvas, incluindo margens): quando estava só no artboard, rodar com
+  // o cursor nas margens pontilhadas caía no zoom da página do navegador.
   useEffect(() => {
-    const el = artboardRef.current;
+    const el = scrollerRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       if (!e.ctrlKey && !e.metaKey) return;
@@ -417,7 +425,7 @@ export default function Home() {
         event.preventDefault();
         saveProjectRef.current();
       }
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "d" && !isTyping) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "d" && !event.shiftKey && !isTyping) {
         event.preventDefault();
         duplicateSelectedRef.current();
       }
@@ -450,11 +458,14 @@ export default function Home() {
       if (!isTyping && event.key.toLowerCase() === "v") setToolMode("select");
       if (!isTyping && event.key.toLowerCase() === "h") setToolMode("hand");
       if (!isTyping && event.key.toLowerCase() === "g") setShowGrid((show) => !show);
+      if (!isTyping && event.key === "?") setDocsOpen(true);
       if ((event.key === "Delete" || event.key === "Backspace") && selectedIdsRef.current.length && !isTyping && !isPreviewRef.current) {
         event.preventDefault();
         deleteSelectedRef.current();
       }
       if (event.key === "Escape") {
+        // A modal de docs fecha sozinha; não limpa a seleção por baixo dela.
+        if (docsOpenRef.current) return;
         if (editingBlockIdRef.current) {
           commitInlineEdit();
         } else {
@@ -591,6 +602,18 @@ export default function Home() {
       return { ...block, ...patch };
     });
     applyBlocks(next);
+  }
+
+  // Aplica aparência a todos os blocos selecionados de uma vez (uma única
+  // entrada no histórico). Usado pelo painel de seleção múltipla.
+  function updateSelectedMany(partial: { style: Partial<BlockStyle> }) {
+    const ids = selectedIdsRef.current;
+    if (!ids.length) return;
+    applyBlocks(
+      blocksRef.current.map((block) =>
+        ids.includes(block.id) ? { ...block, style: { ...block.style, ...partial.style } } : block,
+      ),
+    );
   }
 
   function deleteSelected() {
@@ -1015,6 +1038,7 @@ export default function Home() {
         <div className="topbar-actions">
           <button className="icon-button" title="Desfazer" onClick={undo} disabled={!history.length}><Undo2 size={16} /></button>
           <button className="icon-button" title="Refazer" onClick={redo} disabled={!future.length}><Redo2 size={16} /></button>
+          <button className="icon-button" title="Documentação (?)" onClick={() => setDocsOpen(true)}><BookOpen size={16} /></button>
           <span className="header-divider small" />
           <div className="save-state"><span className={isSaved ? "saved-dot" : "unsaved-dot"} />{isSaved ? "Salvo localmente" : "Não salvo"}</div>
           <button className="button-secondary" onClick={saveProject}><span className="save-icon">⌘</span> Salvar</button>
@@ -1074,7 +1098,7 @@ export default function Home() {
               <button className="tool-button" onClick={() => setZoom((value) => Math.min(200, value + 5))}><Plus size={15} /></button>
             </div>
           </div>
-          <div className={`canvas-scroller device-${device}`}>
+          <div ref={scrollerRef} className={`canvas-scroller device-${device}`}>
             <div className="canvas-ruler-top" style={{ maxWidth: ARTBOARD.width }}>{rulerTicks.map((tick) => <span key={tick}>{tick}</span>)}</div>
             <div className="canvas-stage-wrap" style={{ width: ARTBOARD.width * (zoom / 100), height: ARTBOARD.height * (zoom / 100), transform: `translate(${panOffset.x}px, ${panOffset.y}px)` }}>
               <div ref={artboardRef} className={`artboard ${showGrid && !isPreview ? "with-grid" : ""}`} style={{ width: ARTBOARD.width, height: ARTBOARD.height, transform: `scale(${zoom / 100})` }} onPointerDown={() => { if (!isPreview) setSelectedIds([]); }} onDragOver={(event) => { if (!isPreview) event.preventDefault(); }} onDrop={(event) => { if (isPreview) return; const type = event.dataTransfer.getData("application/wireframe-type") as BlockType; if (type) addBlock(type); }}>
@@ -1108,6 +1132,12 @@ export default function Home() {
             <div className="inspector-section first"><div className="section-title"><span>Seleção múltipla</span><span className="section-kicker">{selectedBlocks.length} blocos</span></div>
               <p className="alignment-hint">Arraste qualquer bloco do grupo para mover todos. Shift+clique remove um bloco do grupo.</p>
             </div>
+            <div className="inspector-section"><div className="section-title"><span>Aparência em grupo</span><Palette size={13} /></div>
+              <div className="color-row"><span>Fundo</span><label className="color-picker"><input type="color" value={normalizeHex(selectedBlocks[0].style.fill, "#ffffff")} onChange={(event) => updateSelectedMany({ style: { fill: event.target.value } })} /><span style={{ backgroundColor: selectedBlocks[0].style.fill }} /><code>{selectedBlocks[0].style.fill.toUpperCase()}</code></label></div>
+              <div className="color-row"><span>Contorno</span><label className="color-picker"><input type="color" value={normalizeHex(selectedBlocks[0].style.border, "#d7d9e0")} onChange={(event) => updateSelectedMany({ style: { border: event.target.value } })} /><span style={{ backgroundColor: selectedBlocks[0].style.border }} /><code>{selectedBlocks[0].style.border.toUpperCase()}</code></label></div>
+              <div className="color-row"><span>Texto</span><label className="color-picker"><input type="color" value={normalizeHex(selectedBlocks[0].style.text, "#242631")} onChange={(event) => updateSelectedMany({ style: { text: event.target.value } })} /><span style={{ backgroundColor: selectedBlocks[0].style.text }} /><code>{selectedBlocks[0].style.text.toUpperCase()}</code></label></div>
+              <label className="range-row"><span>Raio <strong>{selectedBlocks[0].style.radius}px</strong></span><input type="range" min="0" max="28" value={selectedBlocks[0].style.radius} onChange={(event) => updateSelectedMany({ style: { radius: Number(event.target.value) } })} /></label>
+            </div>
             <div className="inspector-section alignment-section"><div className="section-title"><span>Alinhamento</span><Move size={13} /></div><div className="alignment-grid"><button onClick={() => alignSelected("left")} title="Alinhar à esquerda">←</button><button onClick={() => alignSelected("center")} title="Centralizar horizontalmente">↔</button><button onClick={() => alignSelected("right")} title="Alinhar à direita">→</button><button onClick={() => alignSelected("top")} title="Alinhar ao topo">↑</button><button onClick={() => alignSelected("middle")} title="Centralizar verticalmente">↕</button><button onClick={() => alignSelected("bottom")} title="Alinhar à base">↓</button></div><div className="section-title" style={{ marginTop: 8 }}><span>Distribuir</span></div><div className="alignment-grid distribute-grid"><button onClick={() => distributeSelected("x")} title="Distribuir horizontalmente">⇹</button><button onClick={() => distributeSelected("y")} title="Distribuir verticalmente">⇅</button></div><p className="alignment-hint">Alinha dentro do grupo. Com 1 bloco, alinha ao canvas.</p></div>
             <div className="inspector-actions"><button onClick={duplicateSelected}><Copy size={14} /> Duplicar ({selectedBlocks.length})</button><button className="danger" onClick={deleteSelected}><Trash2 size={14} /> Remover ({selectedBlocks.length})</button></div>
           </div> : selectedBlock ? <div className="inspector-content">
@@ -1132,6 +1162,7 @@ export default function Home() {
       </div>
       <input key={fileInputKey} ref={fileInputRef} type="file" accept="application/json,.json" className="sr-only" onChange={importJson} />
       <button className={`import-fab ${!rightVisible ? "fab-full" : ""}`} onClick={() => fileInputRef.current?.click()}><Upload size={15} /> Importar JSON</button>
+      {docsOpen && <DocsModal onClose={() => setDocsOpen(false)} />}
     </main>
   );
 }
