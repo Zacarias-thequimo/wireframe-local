@@ -1,0 +1,351 @@
+{
+  "version": 1,
+  "name": "ACME — Dashboard SaaS",
+  "device": "desktop",
+  "blocks": [],
+  "pages": [
+    {
+      "id": "8c90de55-cbcf-4350-adb6-a6982c2f3fe5",
+      "name": "Dashboard",
+      "blocks": [
+        {
+          "id": "adec1574-27fc-4d81-8685-5fe07f0e8fb6",
+          "type": "sidebar",
+          "x": 16,
+          "y": 16,
+          "w": 200,
+          "h": 668,
+          "label": "ACME\nVisão geral\nAnalytics\nClientes\nRelatórios\nConfigurações",
+          "style": {
+            "fill": "#fafaff",
+            "border": "#e4e5ea",
+            "text": "#3f414c",
+            "radius": 12
+          }
+        },
+        {
+          "id": "f37b9524-7347-4a1c-aff5-a28e3f5eaae7",
+          "type": "heading",
+          "x": 236,
+          "y": 20,
+          "w": 520,
+          "h": 72,
+          "label": "Visão geral\nBom dia, Ana — aqui vai o resumo de hoje.",
+          "style": {
+            "fill": "#f4f4f8",
+            "border": "#f4f4f8",
+            "text": "#171922",
+            "radius": 0
+          }
+        },
+        {
+          "id": "d76c545d-7f52-46f1-adc3-9f8ddd5756f0",
+          "type": "search",
+          "x": 776,
+          "y": 28,
+          "w": 220,
+          "h": 44,
+          "label": "Buscar...",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#d7d9e0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "594d8b98-aa6b-4911-b698-ac8be37e5933",
+          "type": "avatar",
+          "x": 1008,
+          "y": 28,
+          "w": 56,
+          "h": 56,
+          "label": "AN",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#d7d9e0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "59ca2525-8f9b-41db-9719-9cbf7cfd5755",
+          "type": "card",
+          "x": 236,
+          "y": 116,
+          "w": 220,
+          "h": 120,
+          "label": "Receita\nR$ 48,2 mil",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e5ea",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "5cbc0084-981e-4869-bff0-9e685a2eb317",
+          "type": "card",
+          "x": 472,
+          "y": 116,
+          "w": 220,
+          "h": 120,
+          "label": "Utilizadores\n12 480",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e5ea",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "f64d777e-5818-4b46-84b9-0b8e53f882be",
+          "type": "card",
+          "x": 708,
+          "y": 116,
+          "w": 220,
+          "h": 120,
+          "label": "Conversão\n3,8%",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e5ea",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "d4e2c268-a87b-476f-8276-7e83b68358b8",
+          "type": "badge",
+          "x": 236,
+          "y": 244,
+          "w": 90,
+          "h": 28,
+          "label": "▲ +12%",
+          "style": {
+            "fill": "#e8f5e9",
+            "border": "#c8e6c9",
+            "text": "#2e7d32",
+            "radius": 99
+          }
+        },
+        {
+          "id": "52e33f45-1d8e-43c6-83a9-52734f92cdad",
+          "type": "badge",
+          "x": 472,
+          "y": 244,
+          "w": 90,
+          "h": 28,
+          "label": "▲ +8%",
+          "style": {
+            "fill": "#e8f5e9",
+            "border": "#c8e6c9",
+            "text": "#2e7d32",
+            "radius": 99
+          }
+        },
+        {
+          "id": "b8052bd4-1488-4715-ba8c-5eaeeabc1cd9",
+          "type": "badge",
+          "x": 708,
+          "y": 244,
+          "w": 90,
+          "h": 28,
+          "label": "▼ −2%",
+          "style": {
+            "fill": "#fdecea",
+            "border": "#f5c6c0",
+            "text": "#b3261e",
+            "radius": 99
+          }
+        },
+        {
+          "id": "10d21a91-210d-4601-bb50-35384f005444",
+          "type": "tabs",
+          "x": 236,
+          "y": 288,
+          "w": 560,
+          "h": 48,
+          "label": "Hoje | Semana | Mês | Ano",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#d7d9e0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "f304ca1b-136e-43df-aa1c-7341ff9736e8",
+          "type": "table",
+          "x": 236,
+          "y": 348,
+          "w": 560,
+          "h": 200,
+          "label": "Campanha | Cliques | CTR\nLançamento | 12 400 | 4,2%\nPromoção | 8 210 | 3,1%\nNewsletter | 5 930 | 2,7%",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#d7d9e0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "ea9b9755-fbe0-431f-bf7e-089cdbb40bc6",
+          "type": "alert",
+          "x": 812,
+          "y": 116,
+          "w": 272,
+          "h": 64,
+          "label": "3 campanhas terminam esta semana.",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#d7d9e0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "994360ca-69f5-4c34-925e-935410778e7e",
+          "type": "progress",
+          "x": 812,
+          "y": 192,
+          "w": 272,
+          "h": 40,
+          "label": "72",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#d7d9e0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "a5c252ef-1b2a-4764-813e-b668211da8f0",
+          "type": "card",
+          "x": 812,
+          "y": 244,
+          "w": 272,
+          "h": 160,
+          "label": "Top canal\n\nEmail  46%\nSocial  32%\nBusca  22%",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e5ea",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "f8026b36-bf11-4468-bf5a-946808470c10",
+          "type": "button",
+          "x": 812,
+          "y": 416,
+          "w": 272,
+          "h": 44,
+          "label": "Exportar relatório",
+          "style": {
+            "fill": "#7162d9",
+            "border": "#7162d9",
+            "text": "#ffffff",
+            "radius": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": "9a67e578-6c6f-423d-84ad-ea0a5413d7c1",
+      "name": "Login",
+      "blocks": [
+        {
+          "id": "a3ab0680-11cd-4dab-ac3f-fffd666fd8a7",
+          "type": "heading",
+          "x": 370,
+          "y": 110,
+          "w": 360,
+          "h": 64,
+          "label": "Entrar\nAcesse sua conta ACME",
+          "style": {
+            "fill": "#f4f4f8",
+            "border": "#f4f4f8",
+            "text": "#171922",
+            "radius": 0
+          }
+        },
+        {
+          "id": "d6402b1a-e460-456e-bf12-f493f3fb70c5",
+          "type": "field",
+          "x": 370,
+          "y": 190,
+          "w": 360,
+          "h": 68,
+          "label": "Email\nvoce@empresa.com",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#d7d9e0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "4c4ae6d1-235c-4b51-a932-ce6b5a3890dd",
+          "type": "field",
+          "x": 370,
+          "y": 266,
+          "w": 360,
+          "h": 68,
+          "label": "Senha\n••••••••",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#d7d9e0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "df243068-c464-4205-8b90-e81e3dabc181",
+          "type": "checkbox",
+          "x": 370,
+          "y": 346,
+          "w": 240,
+          "h": 36,
+          "label": "Manter sessão iniciada",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#d7d9e0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "31e719c7-ea71-41d6-9bb2-87787f77cab3",
+          "type": "button",
+          "x": 370,
+          "y": 394,
+          "w": 360,
+          "h": 48,
+          "label": "Entrar",
+          "style": {
+            "fill": "#7162d9",
+            "border": "#7162d9",
+            "text": "#ffffff",
+            "radius": 10
+          }
+        },
+        {
+          "id": "e1755e10-c1c8-4470-b08d-c5ae297b48e5",
+          "type": "text",
+          "x": 370,
+          "y": 452,
+          "w": 360,
+          "h": 40,
+          "label": "Esqueceu a senha? Fale conosco.",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#d7d9e0",
+            "text": "#242631",
+            "radius": 12
+          }
+        }
+      ]
+    }
+  ],
+  "activePageId": "8c90de55-cbcf-4350-adb6-a6982c2f3fe5"
+}
