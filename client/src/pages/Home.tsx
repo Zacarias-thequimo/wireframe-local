@@ -1,14 +1,18 @@
 import {
+  AlertTriangle,
   AlignLeft,
+  AppWindow,
   ArrowDownToLine,
   BookOpen,
   ChevronDown,
+  ChevronsRight,
   Circle,
   Copy,
   Download,
   Eye,
   FileJson,
   FileText,
+  Gauge,
   Grid3X3,
   Hand,
   Image as ImageIcon,
@@ -18,13 +22,16 @@ import {
   List,
   Lock,
   Maximize2,
+  Menu,
   Minus,
   Monitor,
   MoreHorizontal,
   MousePointer2,
   Move,
+  PanelBottom,
   PanelLeft,
   PanelRight,
+  PanelTop,
   Palette,
   Plus,
   Redo2,
@@ -33,15 +40,19 @@ import {
   Smartphone,
   Sparkles,
   Square,
+  SquareCheck,
   Star,
   Tablet,
   Tags,
   Table,
+  TextCursorInput,
+  ToggleLeft,
   Trash2,
   Type,
   Undo2,
   Upload,
   UserCircle,
+  Video,
   X,
 } from "lucide-react";
 import { ChangeEvent, PointerEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -101,6 +112,18 @@ const componentCatalog: Array<{
   { type: "badge", label: "Badge", hint: "Tag de status", icon: Tags, accent: "orange" },
   { type: "avatar", label: "Avatar", hint: "Foto/perfil", icon: UserCircle, accent: "lavender" },
   { type: "icon", label: "Ícone", hint: "Placeholder de ícone", icon: Star, accent: "pink" },
+  { type: "tabs", label: "Abas", hint: "Abas de navegação", icon: PanelTop, accent: "blue" },
+  { type: "sidebar", label: "Sidebar", hint: "Menu lateral", icon: Menu, accent: "lavender" },
+  { type: "footer", label: "Rodapé", hint: "Rodapé da página", icon: PanelBottom, accent: "blue" },
+  { type: "breadcrumb", label: "Breadcrumb", hint: "Trilha de navegação", icon: ChevronsRight, accent: "pink" },
+  { type: "field", label: "Campo rotulado", hint: "Label + campo", icon: TextCursorInput, accent: "pink" },
+  { type: "checkbox", label: "Checkbox", hint: "Caixa de seleção", icon: SquareCheck, accent: "mint" },
+  { type: "toggle", label: "Toggle", hint: "Interruptor", icon: ToggleLeft, accent: "mint" },
+  { type: "dropdown", label: "Dropdown", hint: "Seleção suspensa", icon: ChevronDown, accent: "yellow" },
+  { type: "modal", label: "Modal", hint: "Diálogo", icon: AppWindow, accent: "orange" },
+  { type: "alert", label: "Alerta", hint: "Aviso", icon: AlertTriangle, accent: "yellow" },
+  { type: "progress", label: "Progresso", hint: "Barra de progresso", icon: Gauge, accent: "orange" },
+  { type: "video", label: "Vídeo", hint: "Player de vídeo", icon: Video, accent: "lavender" },
 ];
 
 const starterBlocks: Block[] = [
@@ -1115,6 +1138,18 @@ export default function Home() {
                     : block.type === "icon" ? <div className="block-content icon-content">{block.label}</div>
                     : block.type === "list" ? <div className="block-content list-content">{block.label.split("\n").filter(Boolean).map((item, i) => <div key={i} className="list-item"><span className="list-bullet" />{item}</div>)}</div>
                     : block.type === "table" ? (() => { const rows = block.label.split("\n").filter(Boolean); const headers = rows[0]?.split("|").map((c) => c.trim()) ?? []; return <div className="block-content table-content"><div className="table-head">{headers.map((h, i) => <span key={i}>{h}</span>)}</div>{rows.slice(1).map((row, ri) => <div key={ri} className="table-row">{row.split("|").map((c, ci) => <span key={ci}>{c.trim()}</span>)}</div>)}</div>; })()
+                    : block.type === "tabs" ? <div className="block-content tabs-content">{block.label.split("|").map((t) => t.trim()).filter(Boolean).map((t, i) => <span key={i} className={`tab-item${i === 0 ? " active" : ""}`}>{t}</span>)}</div>
+                    : block.type === "sidebar" ? (() => { const lines = block.label.split("\n").filter(Boolean); return <div className="block-content sidebar-content"><div className="side-brand">{lines[0] ?? ""}</div>{lines.slice(1).map((l, i) => <div key={i} className={`side-item${i === 0 ? " active" : ""}`}>{l}</div>)}</div>; })()
+                    : block.type === "footer" ? (() => { const lines = block.label.split("\n"); return <div className="block-content footer-content"><strong>{lines[0] ?? ""}</strong><span>{lines.slice(1).join(" ")}</span></div>; })()
+                    : block.type === "breadcrumb" ? <div className="block-content crumb-content">{block.label.split("/").map((c) => c.trim()).filter(Boolean).map((c, i, arr) => <span key={i} className={i === arr.length - 1 ? "crumb-current" : "crumb-link"}>{i > 0 ? "/ " : ""}{c}</span>)}</div>
+                    : block.type === "field" ? (() => { const lines = block.label.split("\n"); return <div className="block-content field-content"><label>{lines[0] ?? ""}</label><div className="field-box">{lines.slice(1).join(" ")}</div></div>; })()
+                    : block.type === "checkbox" ? <div className="block-content check-content"><span className="check-box">✓</span>{block.label}</div>
+                    : block.type === "toggle" ? <div className="block-content toggle-content">{block.label}<span className="toggle-track"><span className="toggle-knob" /></span></div>
+                    : block.type === "dropdown" ? <div className="block-content dropdown-content">{block.label}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={block.style.text} strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                    : block.type === "modal" ? (() => { const lines = block.label.split("\n"); return <div className="block-content modal-content"><strong>{lines[0] ?? ""}</strong><p>{lines.slice(1).join(" ")}</p><div className="modal-actions"><span className="modal-btn ghost">Cancelar</span><span className="modal-btn primary">Confirmar</span></div></div>; })()
+                    : block.type === "alert" ? <div className="block-content alert-content"><span className="alert-dot">!</span>{block.label}</div>
+                    : block.type === "progress" ? (() => { const pct = Math.min(100, Math.max(0, Math.round(Number(block.label) || 0))); return <div className="block-content progress-content"><div className="progress-track"><div className="progress-fill" style={{ width: `${pct}%` }} /></div><span className="progress-pct">{pct}%</span></div>; })()
+                    : block.type === "video" ? <div className="block-content video-content"><span className="video-play">▶</span><span className="video-label">{block.label}</span></div>
                     : <span className="block-content">{block.label}</span>}
                   {selectedIds.length === 1 && selectedId === block.id && !isPreview && <><span className="resize-handle handle-se" onPointerDown={(event) => { event.stopPropagation(); setResizeState({ id: block.id, startX: event.clientX, startY: event.clientY, origW: block.w, origH: block.h, origX: block.x, origY: block.y, corner: "se" }); }} /><span className="resize-handle handle-sw" onPointerDown={(event) => { event.stopPropagation(); setResizeState({ id: block.id, startX: event.clientX, startY: event.clientY, origW: block.w, origH: block.h, origX: block.x, origY: block.y, corner: "sw" }); }} /></>}
                 </>}

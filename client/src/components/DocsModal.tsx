@@ -40,6 +40,18 @@ const COMPONENTS: Array<{ name: string; hint: string }> = [
   { name: "Badge", hint: "Tag de status (ex.: Ativo, Pendente)." },
   { name: "Avatar", hint: "Foto/perfil — usa as 2 primeiras letras." },
   { name: "Ícone", hint: "Placeholder quadrado de ícone." },
+  { name: "Abas", hint: "Abas de navegação separadas por |." },
+  { name: "Sidebar", hint: "Menu lateral — 1ª linha é a marca." },
+  { name: "Rodapé", hint: "Rodapé com marca e links." },
+  { name: "Breadcrumb", hint: "Trilha separada por /." },
+  { name: "Campo rotulado", hint: "Label na 1ª linha, placeholder na 2ª." },
+  { name: "Checkbox", hint: "Caixa de seleção marcada." },
+  { name: "Toggle", hint: "Interruptor ligado/desligado." },
+  { name: "Dropdown", hint: "Seleção suspensa com seta." },
+  { name: "Modal", hint: "Diálogo com título, texto e botões." },
+  { name: "Alerta", hint: "Aviso em destaque âmbar." },
+  { name: "Progresso", hint: "Barra — o rótulo é a % (0–100)." },
+  { name: "Vídeo", hint: "Player escuro com botão play." },
 ];
 
 export default function DocsModal({ onClose }: { onClose: () => void }) {

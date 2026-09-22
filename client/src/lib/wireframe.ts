@@ -17,7 +17,19 @@ export type BlockType =
   | "badge"
   | "avatar"
   | "search"
-  | "icon";
+  | "icon"
+  | "tabs"
+  | "sidebar"
+  | "footer"
+  | "breadcrumb"
+  | "field"
+  | "checkbox"
+  | "toggle"
+  | "dropdown"
+  | "modal"
+  | "alert"
+  | "progress"
+  | "video";
 
 export type Device = "desktop" | "tablet" | "mobile";
 
@@ -75,6 +87,18 @@ export const BLOCK_TYPES: BlockType[] = [
   "avatar",
   "search",
   "icon",
+  "tabs",
+  "sidebar",
+  "footer",
+  "breadcrumb",
+  "field",
+  "checkbox",
+  "toggle",
+  "dropdown",
+  "modal",
+  "alert",
+  "progress",
+  "video",
 ];
 
 export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
@@ -92,6 +116,18 @@ export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   avatar: "Avatar",
   search: "Busca",
   icon: "Ícone",
+  tabs: "Abas",
+  sidebar: "Sidebar",
+  footer: "Rodapé",
+  breadcrumb: "Breadcrumb",
+  field: "Campo rotulado",
+  checkbox: "Checkbox",
+  toggle: "Toggle",
+  dropdown: "Dropdown",
+  modal: "Modal",
+  alert: "Alerta",
+  progress: "Progresso",
+  video: "Vídeo",
 };
 
 export const DEVICES: Device[] = ["desktop", "tablet", "mobile"];
@@ -137,6 +173,18 @@ export function defaultStyle(type: BlockType): BlockStyle {
     avatar: { fill: "#e8eaf6", border: "#c5cae9", text: "#5c6bc0", radius: 99 },
     search: { fill: "#ffffff", border: "#b9bdc9", text: "#8a8e9d", radius: 99 },
     icon: { fill: "#f5f5f5", border: "#e0e0e0", text: "#757575", radius: 12 },
+    tabs: { fill: "#ffffff", border: "#e4e5ea", text: "#3f414c", radius: 10 },
+    sidebar: { fill: "#fafaff", border: "#e4e5ea", text: "#3f414c", radius: 12 },
+    footer: { fill: "#f4f4f8", border: "#e4e5ea", text: "#686d7c", radius: 12 },
+    breadcrumb: { fill: "#ffffff", border: "#e4e5ea", text: "#686d7c", radius: 8 },
+    field: { fill: "#ffffff", border: "#e4e5ea", text: "#3f414c", radius: 10 },
+    checkbox: { fill: "#ffffff", border: "#e4e5ea", text: "#3f414c", radius: 8 },
+    toggle: { fill: "#ffffff", border: "#e4e5ea", text: "#3f414c", radius: 12 },
+    dropdown: { fill: "#ffffff", border: "#b9bdc9", text: "#3f414c", radius: 8 },
+    modal: { fill: "#ffffff", border: "#c9c2f5", text: "#242631", radius: 16 },
+    alert: { fill: "#fffbeb", border: "#fcd34d", text: "#92400e", radius: 10 },
+    progress: { fill: "#eef0f6", border: "#e4e5ea", text: "#5549af", radius: 99 },
+    video: { fill: "#171922", border: "#171922", text: "#ffffff", radius: 16 },
   };
   return { ...styles[type] };
 }
@@ -157,6 +205,18 @@ export function defaultLabel(type: BlockType) {
     avatar: "AV",
     search: "Buscar...",
     icon: "★",
+    tabs: "Início | Produtos | Preços",
+    sidebar: "LOGO\nInício\nProdutos\nConfigurações",
+    footer: "© 2026 Minha Marca\nSobre   •   Contato   •   Privacidade",
+    breadcrumb: "Início / Produtos / Detalhe",
+    field: "Nome\nDigite seu nome",
+    checkbox: "Lembrar de mim",
+    toggle: "Notificações",
+    dropdown: "Selecione uma opção",
+    modal: "Confirmar ação\nTem certeza que deseja continuar?",
+    alert: "Atenção: verifique os dados antes de salvar.",
+    progress: "60",
+    video: "Vídeo de apresentação",
   };
   return labels[type];
 }
@@ -177,6 +237,18 @@ export function createBlock(type: BlockType, index: number, maxW = 1100, maxH = 
     avatar: [56, 56],
     search: [320, 44],
     icon: [48, 48],
+    tabs: [420, 52],
+    sidebar: [220, 420],
+    footer: [620, 72],
+    breadcrumb: [320, 40],
+    field: [300, 68],
+    checkbox: [220, 40],
+    toggle: [220, 48],
+    dropdown: [280, 48],
+    modal: [380, 220],
+    alert: [420, 64],
+    progress: [320, 40],
+    video: [320, 200],
   };
   const [rawW, h] = sizes[type];
   const w = Math.min(rawW, maxW - 64);
@@ -527,6 +599,89 @@ ${lis}
   ${items.map((item, i) => `<span${i === 0 ? ' style="font-weight:800;margin-right:auto;"' : ""}>${escapeHtml(item)}</span>`).join("\n  ")}
 </div>`;
   }
+  if (block.type === "tabs") {
+    const tabs = block.label.split("|").map((t) => t.trim()).filter(Boolean);
+    return `<div style="${base}${bg}${txt}display:flex;align-items:stretch;font-size:13px;font-weight:600;overflow:hidden;">
+  ${tabs.map((t, i) => `<span style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 12px;${i === 0 ? `color:${s.text};border-bottom:2px solid ${s.text};` : "opacity:.55;"}">${escapeHtml(t)}</span>`).join("\n  ")}
+</div>`;
+  }
+  if (block.type === "sidebar") {
+    const lines = block.label.split("\n").filter(Boolean);
+    return `<div style="${base}${bg}${txt}display:flex;flex-direction:column;padding:16px 0;font-size:13px;overflow:hidden;">
+  <div style="padding:0 18px 12px;font-weight:800;letter-spacing:.04em;">${escapeHtml(lines[0] ?? "")}</div>
+  ${lines.slice(1).map((l, i) => `<div style="padding:9px 18px;${i === 0 ? "background:rgba(113,98,217,.1);font-weight:700;" : "opacity:.75;"}">${escapeHtml(l)}</div>`).join("\n  ")}
+</div>`;
+  }
+  if (block.type === "footer") {
+    const lines = block.label.split("\n");
+    return `<div style="${base}${bg}${txt}display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:12px;">
+  <span style="font-weight:700;">${escapeHtml(lines[0] ?? "")}</span>
+  <span style="opacity:.75;">${escapeHtml(lines.slice(1).join(" "))}</span>
+</div>`;
+  }
+  if (block.type === "breadcrumb") {
+    const crumbs = block.label.split("/").map((c) => c.trim()).filter(Boolean);
+    return `<div style="${base}${bg}${txt}display:flex;align-items:center;gap:8px;padding:0 16px;font-size:12px;">
+  ${crumbs.map((c, i) => `${i > 0 ? `<span style="opacity:.4;">/</span>` : ""}<span${i === crumbs.length - 1 ? ' style="font-weight:700;"' : ' style="opacity:.65;"'}>${escapeHtml(c)}</span>`).join("\n  ")}
+</div>`;
+  }
+  if (block.type === "field") {
+    const lines = block.label.split("\n");
+    return `<div style="${base}display:flex;flex-direction:column;justify-content:center;gap:5px;font-family:'DM Sans',system-ui,sans-serif;">
+  <label style="font-size:11px;font-weight:700;color:${s.text};">${escapeHtml(lines[0] ?? "")}</label>
+  <div style="display:flex;align-items:center;padding:0 12px;height:34px;background:${s.fill};border:1px solid ${s.border};border-radius:${Math.min(8, s.radius)}px;color:#8a8e9d;font-size:12px;">${escapeHtml(lines.slice(1).join(" "))}</div>
+</div>`;
+  }
+  if (block.type === "checkbox") {
+    return `<div style="${base}${txt}display:flex;align-items:center;gap:10px;font-size:13px;">
+  <span style="width:17px;height:17px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:#7162d9;border:1px solid #7162d9;border-radius:5px;color:#fff;font-size:11px;font-weight:800;">✓</span>
+  ${escapeHtml(block.label)}
+</div>`;
+  }
+  if (block.type === "toggle") {
+    return `<div style="${base}${txt}display:flex;align-items:center;justify-content:space-between;padding:0 4px;font-size:13px;font-weight:600;">
+  ${escapeHtml(block.label)}
+  <span style="width:38px;height:22px;flex-shrink:0;border-radius:99px;background:#7162d9;position:relative;"><span style="position:absolute;top:3px;right:3px;width:16px;height:16px;border-radius:50%;background:#fff;"></span></span>
+</div>`;
+  }
+  if (block.type === "dropdown") {
+    return `<div style="${base}${bg}${txt}display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:13px;">
+  ${escapeHtml(block.label)}
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${s.text}" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+</div>`;
+  }
+  if (block.type === "modal") {
+    const lines = block.label.split("\n");
+    return `<div style="${base}${bg}${txt}display:flex;flex-direction:column;justify-content:center;gap:8px;padding:24px;box-shadow:0 18px 50px rgba(35,33,65,.18);">
+  <div style="font-size:16px;font-weight:800;">${escapeHtml(lines[0] ?? "")}</div>
+  <div style="font-size:12px;opacity:.7;line-height:1.5;">${escapeHtml(lines.slice(1).join(" "))}</div>
+  <div style="display:flex;gap:8px;margin-top:8px;">
+    <span style="padding:7px 16px;border:1px solid ${s.border};border-radius:8px;font-size:12px;font-weight:600;">Cancelar</span>
+    <span style="padding:7px 16px;background:#7162d9;border:1px solid #7162d9;border-radius:8px;font-size:12px;font-weight:700;color:#fff;">Confirmar</span>
+  </div>
+</div>`;
+  }
+  if (block.type === "alert") {
+    return `<div style="${base}${bg}${txt}display:flex;align-items:center;gap:10px;padding:0 16px;font-size:12.5px;font-weight:600;">
+  <span style="width:18px;height:18px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:${s.text};color:${s.fill};font-size:11px;font-weight:800;">!</span>
+  ${escapeHtml(block.label)}
+</div>`;
+  }
+  if (block.type === "progress") {
+    const pct = clamp(Math.round(parseNum(block.label, 60)), 0, 100);
+    return `<div style="${base}display:flex;align-items:center;gap:10px;font-family:'DM Sans',system-ui,sans-serif;">
+  <div style="flex:1;height:10px;background:${s.fill};border:1px solid ${s.border};border-radius:99px;overflow:hidden;">
+    <div style="width:${pct}%;height:100%;background:#7162d9;border-radius:99px;"></div>
+  </div>
+  <span style="font-size:11px;font-weight:700;color:${s.text};">${pct}%</span>
+</div>`;
+  }
+  if (block.type === "video") {
+    return `<div style="${base}${bg}display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;overflow:hidden;">
+  <span style="width:46px;height:46px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.16);color:${s.text};font-size:15px;">▶</span>
+  <span style="font-size:11px;color:${s.text};opacity:.7;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(block.label)}</span>
+</div>`;
+  }
   // text
   return `<div style="${base}${bg}${txt}display:flex;align-items:flex-start;padding:14px 18px;font-size:14px;line-height:1.5;white-space:pre-line;">${escapeHtml(block.label)}</div>`;
 }
@@ -626,6 +781,79 @@ ${lis}
   ${items.map((item, i) => `<span class="${i === 0 ? "font-extrabold mr-auto" : ""}">${escapeHtml(item)}</span>`).join("\n  ")}
 </div>`;
   }
+  if (block.type === "tabs") {
+    const tabs = block.label.split("|").map((t) => t.trim()).filter(Boolean);
+    return `<div class="${pos} ${bg} ${r} ${txt} flex items-stretch text-[13px] font-semibold overflow-hidden">
+  ${tabs.map((t, i) => `<span class="flex-1 flex items-center justify-center px-3${i === 0 ? " border-b-2" : " opacity-55"}"${i === 0 ? ` style="border-color:${block.style.text}"` : ""}>${escapeHtml(t)}</span>`).join("\n  ")}
+</div>`;
+  }
+  if (block.type === "sidebar") {
+    const lines = block.label.split("\n").filter(Boolean);
+    return `<div class="${pos} ${bg} ${r} ${txt} flex flex-col py-4 text-[13px] overflow-hidden">
+  <div class="px-[18px] pb-3 font-extrabold tracking-wide">${escapeHtml(lines[0] ?? "")}</div>
+  ${lines.slice(1).map((l, i) => `<div class="px-[18px] py-2${i === 0 ? " font-bold bg-[#7162d9]/10" : " opacity-75"}">${escapeHtml(l)}</div>`).join("\n  ")}
+</div>`;
+  }
+  if (block.type === "footer") {
+    const lines = block.label.split("\n");
+    return `<div class="${pos} ${bg} ${r} ${txt} flex items-center justify-between px-6 text-xs">
+  <span class="font-bold">${escapeHtml(lines[0] ?? "")}</span>
+  <span class="opacity-75">${escapeHtml(lines.slice(1).join(" "))}</span>
+</div>`;
+  }
+  if (block.type === "breadcrumb") {
+    const crumbs = block.label.split("/").map((c) => c.trim()).filter(Boolean);
+    return `<div class="${pos} ${bg} ${r} ${txt} flex items-center gap-2 px-4 text-xs">
+  ${crumbs.map((c, i) => `${i > 0 ? `<span class="opacity-40">/</span>` : ""}<span class="${i === crumbs.length - 1 ? "font-bold" : "opacity-65"}">${escapeHtml(c)}</span>`).join("\n  ")}
+</div>`;
+  }
+  if (block.type === "field") {
+    const lines = block.label.split("\n");
+    return `<div class="${pos} flex flex-col justify-center gap-1">
+  <label class="text-[11px] font-bold" style="color:${block.style.text}">${escapeHtml(lines[0] ?? "")}</label>
+  <div class="flex items-center px-3 h-[34px] text-xs text-[#8a8e9d] border" style="background:${block.style.fill};border-color:${block.style.border};border-radius:${Math.min(8, block.style.radius)}px">${escapeHtml(lines.slice(1).join(" "))}</div>
+</div>`;
+  }
+  if (block.type === "checkbox") return `<div class="${pos} ${txt} flex items-center gap-2.5 text-[13px]">
+  <span class="w-[17px] h-[17px] shrink-0 inline-flex items-center justify-center bg-[#7162d9] border border-[#7162d9] rounded-[5px] text-white text-[11px] font-extrabold">✓</span>
+  ${escapeHtml(block.label)}
+</div>`;
+  if (block.type === "toggle") return `<div class="${pos} ${txt} flex items-center justify-between px-1 text-[13px] font-semibold">
+  ${escapeHtml(block.label)}
+  <span class="w-[38px] h-[22px] shrink-0 rounded-full bg-[#7162d9] relative"><span class="absolute top-[3px] right-[3px] w-4 h-4 rounded-full bg-white"></span></span>
+</div>`;
+  if (block.type === "dropdown") return `<div class="${pos} ${bg} ${r} ${txt} flex items-center justify-between px-3.5 text-[13px]">
+  ${escapeHtml(block.label)}
+  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="${block.style.text}" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+</div>`;
+  if (block.type === "modal") {
+    const lines = block.label.split("\n");
+    return `<div class="${pos} ${bg} ${r} ${txt} flex flex-col justify-center gap-2 p-6 shadow-2xl">
+  <div class="text-base font-extrabold">${escapeHtml(lines[0] ?? "")}</div>
+  <div class="text-xs opacity-70 leading-relaxed">${escapeHtml(lines.slice(1).join(" "))}</div>
+  <div class="flex gap-2 mt-2">
+    <span class="px-4 py-[7px] border rounded-lg text-xs font-semibold" style="border-color:${block.style.border}">Cancelar</span>
+    <span class="px-4 py-[7px] bg-[#7162d9] border border-[#7162d9] rounded-lg text-xs font-bold text-white">Confirmar</span>
+  </div>
+</div>`;
+  }
+  if (block.type === "alert") return `<div class="${pos} ${bg} ${r} ${txt} flex items-center gap-2.5 px-4 text-[12.5px] font-semibold">
+  <span class="w-[18px] h-[18px] shrink-0 inline-flex items-center justify-center rounded-full text-[11px] font-extrabold" style="background:${block.style.text};color:${block.style.fill}">!</span>
+  ${escapeHtml(block.label)}
+</div>`;
+  if (block.type === "progress") {
+    const pct = clamp(Math.round(parseNum(block.label, 60)), 0, 100);
+    return `<div class="${pos} flex items-center gap-2.5">
+  <div class="flex-1 h-[10px] rounded-full overflow-hidden border" style="background:${block.style.fill};border-color:${block.style.border}">
+    <div class="h-full bg-[#7162d9] rounded-full" style="width:${pct}%"></div>
+  </div>
+  <span class="text-[11px] font-bold" style="color:${block.style.text}">${pct}%</span>
+</div>`;
+  }
+  if (block.type === "video") return `<div class="${pos} ${bg} ${r} flex flex-col items-center justify-center gap-2.5 overflow-hidden">
+  <span class="w-[46px] h-[46px] flex items-center justify-center rounded-full bg-white/15 text-[15px]" style="color:${block.style.text}">▶</span>
+  <span class="text-[11px] opacity-70 font-sans" style="color:${block.style.text}">${escapeHtml(block.label)}</span>
+</div>`;
   // text
   return `<div class="${pos} ${bg} ${r} ${txt} flex items-start p-3.5 text-[14px] leading-relaxed whitespace-pre-line">${escapeHtml(block.label)}</div>`;
 }

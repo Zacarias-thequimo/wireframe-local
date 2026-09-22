@@ -40,6 +40,18 @@ const BLOCK_TYPES = [
   "avatar",
   "search",
   "icon",
+  "tabs",
+  "sidebar",
+  "footer",
+  "breadcrumb",
+  "field",
+  "checkbox",
+  "toggle",
+  "dropdown",
+  "modal",
+  "alert",
+  "progress",
+  "video",
 ] as const;
 type BlockType = (typeof BLOCK_TYPES)[number];
 
@@ -89,6 +101,18 @@ const DEFAULT_SIZE: Record<BlockType, { w: number; h: number }> = {
   avatar: { w: 56, h: 56 },
   search: { w: 320, h: 44 },
   icon: { w: 48, h: 48 },
+  tabs: { w: 420, h: 52 },
+  sidebar: { w: 220, h: 420 },
+  footer: { w: 620, h: 72 },
+  breadcrumb: { w: 320, h: 40 },
+  field: { w: 300, h: 68 },
+  checkbox: { w: 220, h: 40 },
+  toggle: { w: 220, h: 48 },
+  dropdown: { w: 280, h: 48 },
+  modal: { w: 380, h: 220 },
+  alert: { w: 420, h: 64 },
+  progress: { w: 320, h: 40 },
+  video: { w: 320, h: 200 },
 };
 
 /* ---------- helpers de filesystem (confina ao PROJECTS_DIR) ---------- */
@@ -263,7 +287,7 @@ const TOOLS = [
   {
     name: "create_project",
     description:
-      "Cria um novo projeto wireframe. 'blocks' e uma lista opcional de blocos (type obrigatorio: heading|text|button|input|image|card|navbar|divider|list|table|badge|avatar|search|icon; x/y/w/h/label/style opcionais). Opcionalmente cria paginas multiplas.",
+      "Cria um novo projeto wireframe. 'blocks' e uma lista opcional de blocos (type obrigatorio: heading|text|button|input|image|card|navbar|divider|list|table|badge|avatar|search|icon|tabs|sidebar|footer|breadcrumb|field|checkbox|toggle|dropdown|modal|alert|progress|video; x/y/w/h/label/style opcionais). Opcionalmente cria paginas multiplas.",
     inputSchema: {
       type: "object",
       properties: {

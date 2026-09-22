@@ -5,7 +5,7 @@ Editor visual local e leve para desenhar wireframes de interfaces sem depender d
 ## O que está incluído
 
 - Canvas de wireframe com grade, zoom e tamanhos desktop, tablet e mobile.
-- Biblioteca de componentes: título, texto, botão, campo, imagem, card, navegação, divisor, lista, tabela, badge, avatar, busca e ícone.
+- Biblioteca de componentes: título, texto, botão, campo, busca, imagem, card, navegação, divisor, lista, tabela, badge, avatar, ícone, abas, sidebar, rodapé, breadcrumb, campo rotulado, checkbox, toggle, dropdown, modal, alerta, progresso e vídeo.
 - Inserção por clique ou arraste a partir da biblioteca.
 - Seleção simples e múltipla (`Shift+clique`, `Cmd/Ctrl + A`), com arraste, setas, duplicação e remoção em grupo.
 - Edição de aparência em grupo: com 2+ blocos selecionados, fundo, contorno, texto e raio aplicam-se a todos de uma vez (uma entrada no histórico).
@@ -143,7 +143,7 @@ O projeto inclui um servidor [MCP](https://modelcontextprotocol.io) em `mcp/serv
 
 - `list_projects` — lista os projetos no diretório (default: `./wireframe-projects`, configurável via `WIREFRAME_PROJECTS_DIR`)
 - `read_project` / `create_project` — ler e criar projetos no formato do editor (`version: 1`, blocos `{id, type, x, y, w, h, label, style}`)
-- `add_block` / `update_block` / `remove_block` — gerir blocos na página ativa (14 tipos: heading, text, button, input, image, card, navbar, divider, list, table, badge, avatar, search, icon)
+- `add_block` / `update_block` / `remove_block` — gerir blocos na página ativa (26 tipos: heading, text, button, input, image, card, navbar, divider, list, table, badge, avatar, search, icon, tabs, sidebar, footer, breadcrumb, field, checkbox, toggle, dropdown, modal, alert, progress, video)
 - `add_page` / `set_active_page` — páginas múltiplas
 - `render_svg` — preview SVG sem browser
 - `delete_project` — apaga (exige `confirm: true`)

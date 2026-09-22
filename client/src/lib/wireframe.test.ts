@@ -207,6 +207,30 @@ describe("buildHtml", () => {
     expect(html).toContain("Buscar...");
     expect(html).toContain("★");
   });
+  it("renderiza navegação, formulários e feedback (tabs, modal, progress...)", () => {
+    const blocks: Block[] = [
+      block({ type: "tabs", label: "A | B" }),
+      block({ type: "sidebar", label: "LOGO\nHome" }),
+      block({ type: "footer", label: "Marca\nLinks" }),
+      block({ type: "breadcrumb", label: "A / B" }),
+      block({ type: "field", label: "Nome\nDigite" }),
+      block({ type: "checkbox", label: "Lembrar" }),
+      block({ type: "toggle", label: "Notas" }),
+      block({ type: "dropdown", label: "Escolha" }),
+      block({ type: "modal", label: "Título\nTexto" }),
+      block({ type: "alert", label: "Cuidado" }),
+      block({ type: "progress", label: "60" }),
+      block({ type: "video", label: "Demo" }),
+    ];
+    const html = buildHtml(blocks, 800, 600, "Teste");
+    expect(html).toContain("Confirmar");
+    expect(html).toContain("60%");
+    expect(html).toContain("Lembrar");
+    expect(html).toContain("Escolha");
+    const tw = buildTailwind(blocks, 800, 600, "Teste");
+    expect(tw).toContain("Confirmar");
+    expect(tw).toContain("60%");
+  });
 });
 
 describe("buildTailwind", () => {
@@ -230,7 +254,26 @@ describe("buildTailwind", () => {
 
 describe("createBlock novos tipos", () => {
   it("cabe no artboard para todos os tipos", () => {
-    const types = ["list", "table", "badge", "avatar", "search", "icon"] as const;
+    const types = [
+      "list",
+      "table",
+      "badge",
+      "avatar",
+      "search",
+      "icon",
+      "tabs",
+      "sidebar",
+      "footer",
+      "breadcrumb",
+      "field",
+      "checkbox",
+      "toggle",
+      "dropdown",
+      "modal",
+      "alert",
+      "progress",
+      "video",
+    ] as const;
     for (const type of types) {
       const b = createBlock(type, 0, ARTBOARDS.desktop.width, ARTBOARDS.desktop.height);
       expect(b.x + b.w).toBeLessThanOrEqual(ARTBOARDS.desktop.width);
