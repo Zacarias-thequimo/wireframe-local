@@ -57,6 +57,8 @@ button:not(:disabled) { cursor: pointer; }
 button:disabled { opacity: .38; cursor: not-allowed; }
 
 .studio-shell { min-height: 100vh; height: 100vh; overflow: hidden; background: #f8f8fb; color: #292b35; letter-spacing: -.01em; }
+.studio-shell.tool-hand, .studio-shell.tool-hand .canvas-scroller { cursor: grab; }
+.studio-shell.tool-hand.panning, .studio-shell.tool-hand.panning .canvas-scroller { cursor: grabbing; }
 .topbar { height: 68px; display: flex; align-items: center; justify-content: space-between; padding: 0 21px 0 24px; background: rgba(255,255,255,.93); border-bottom: 1px solid #e8e8ef; position: relative; z-index: 20; }
 .topbar-left, .topbar-actions, .topbar-center { display: flex; align-items: center; }
 .topbar-left { min-width: 370px; gap: 12px; }
@@ -208,6 +210,7 @@ button:disabled { opacity: .38; cursor: not-allowed; }
 .resize-handle { position: absolute; bottom: -4px; width: 6px; height: 6px; border: 1px solid #7769dc; border-radius: 2px; background: #fff; }
 .handle-se { right: -4px; cursor: nwse-resize; }
 .handle-sw { left: -4px; cursor: nesw-resize; }
+.inline-edit { position: absolute; inset: 0; width: 100%; height: 100%; border: 2px solid #7769dc; border-radius: inherit; background: #fff; color: inherit; padding: 10px 18px; resize: none; outline: none; font: inherit; line-height: 1.35; z-index: 10; }
 .canvas-hint { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid #e7e7ee; border-radius: 6px; color: #a3a4ae; background: rgba(255,255,255,.74); font-size: 9px; backdrop-filter: blur(5px); white-space: nowrap; }
 .preview-mode .canvas-scroller { padding-top: 78px; }
 .preview-mode .wire-block { cursor: default; }

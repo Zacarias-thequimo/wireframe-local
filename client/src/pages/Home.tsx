@@ -180,6 +180,11 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [pageDraft, setPageDraft] = useState("");
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
+  const [clipboard, setClipboard] = useState<Block[]>([]);
+  const [spaceHeld, setSpaceHeld] = useState(false);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [dragState, setDragState] = useState<{
     id: string;
     startX: number;
@@ -237,15 +242,86 @@ export default function Home() {
   const selectAllRef = useRef(() => {});
   const moveSelectedByRef = useRef((_dx: number, _dy: number) => {});
   const updateSelectedRef = useRef((_patch: Partial<Block> | { style: Partial<BlockStyle> }) => {});
+  const editingBlockIdRef = useRef<string | null>(null);
+  editingBlockIdRef.current = editingBlockId;
+  const copySelectionRef = useRef(() => {});
+  const pasteClipboardRef = useRef(() => {});
+  const duplicateInPlaceRef = useRef(() => {});
+  const commitInlineEditRef = useRef(() => {});
+  const editingTextRef = useRef(editingText);
+  editingTextRef.current = editingText;
+  const spaceHeldRef = useRef(spaceHeld);
+  spaceHeldRef.current = spaceHeld;
+  const panRef = useRef(panOffset);
+  panRef.current = panOffset;
 
   const leftVisible = !isPreview && !leftCollapsed;
   const rightVisible = !isPreview && !rightCollapsed;
+
+  function isTypingTarget(el: Element | EventTarget | null) {
+    if (!el || !(el instanceof HTMLElement)) return false;
+    return ["INPUT", "TEXTAREA"].includes(el.tagName) || el.isContentEditable;
+  }
 
   const filteredCatalog = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return componentCatalog;
     return componentCatalog.filter((item) => item.label.toLowerCase().includes(query) || item.hint.toLowerCase().includes(query) || item.type.toLowerCase().includes(query));
   }, [searchQuery]);
+
+  // Espaço segurado ativa modo Pan (mão).
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.code === "Space" && !e.repeat && !isTypingTarget(e.target)) {
+        e.preventDefault();
+        setSpaceHeld(true);
+        setToolMode("hand");
+      }
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        setSpaceHeld(false);
+        setToolMode("select");
+      }
+    };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
+  }, []);
+
+  // Ctrl+roda do mouse para zoom.
+  useEffect(() => {
+    const el = artboardRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      setZoom((prev) => clamp(Math.round(prev + (e.deltaY > 0 ? -4 : 4)), 25, 200));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
+  // Pan com Espaço+arraste.
+  useEffect(() => {
+    if (!spaceHeld) return;
+    let startX = 0;
+    let startY = 0;
+    let origX = 0;
+    let origY = 0;
+    const onDown = (e: globalThis.PointerEvent) => {
+      startX = e.clientX;
+      startY = e.clientY;
+      origX = panRef.current.x;
+      origY = panRef.current.y;
+    };
+    const onMove = (e: globalThis.PointerEvent) => {
+      setPanOffset({ x: Math.round(origX + (e.clientX - startX)), y: Math.round(origY + (e.clientY - startY)) });
+    };
+    window.addEventListener("pointerdown", onDown as EventListener);
+    window.addEventListener("pointermove", onMove as EventListener);
+    return () => { window.removeEventListener("pointerdown", onDown as EventListener); window.removeEventListener("pointermove", onMove as EventListener); };
+  }, [spaceHeld]);
 
   // Fecha o menu Exportar ao clicar fora ou ao pressionar Escape
   useEffect(() => {
@@ -326,6 +402,18 @@ export default function Home() {
         event.preventDefault();
         selectAllRef.current();
       }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "c" && !isTyping) {
+        event.preventDefault();
+        copySelectionRef.current();
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "v" && !isTyping) {
+        event.preventDefault();
+        pasteClipboardRef.current();
+      }
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "d" && !isTyping) {
+        event.preventDefault();
+        duplicateInPlaceRef.current();
+      }
       const currents = selectedIdsRef.current
         .map((id) => blocksRef.current.find((block) => block.id === id))
         .filter((block): block is Block => block !== undefined);
@@ -343,7 +431,13 @@ export default function Home() {
         event.preventDefault();
         deleteSelectedRef.current();
       }
-      if (event.key === "Escape") setSelectedIds([]);
+      if (event.key === "Escape") {
+        if (editingBlockIdRef.current) {
+          commitInlineEdit();
+        } else {
+          setSelectedIds([]);
+        }
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -521,6 +615,64 @@ export default function Home() {
     applyBlocks(next);
   }
 
+  function copySelection() {
+    const ids = selectedIdsRef.current;
+    const list = blocksRef.current.filter((block) => ids.includes(block.id));
+    if (list.length) setClipboard(list.map((b) => ({ ...b })));
+  }
+
+  function pasteClipboard() {
+    if (!clipboard.length) return;
+    const dims = ARTBOARDS[deviceRef.current];
+    const offset = 24;
+    const copies = clipboard.map((block) => {
+      const c = { ...block, id: makeId() };
+      // Tenta posicionar ao lado direito; se não cabe, tenta abaixo.
+      let nx = clamp(block.x + offset, 0, dims.width - c.w);
+      let ny = block.y;
+      if (nx + c.w > dims.width) {
+        nx = 0;
+        ny = clamp(block.y + offset, 0, dims.height - c.h);
+      }
+      c.x = nx;
+      c.y = ny;
+      return c;
+    });
+    applyBlocks([...blocksRef.current, ...copies]);
+    setSelectedIds(copies.map((c) => c.id));
+    toast.success(copies.length > 1 ? `${copies.length} blocos colados` : "Bloco colado");
+  }
+
+  function duplicateInPlace() {
+    const ids = selectedIdsRef.current;
+    if (!ids.length) return;
+    const copies = blocksRef.current
+      .filter((block) => ids.includes(block.id))
+      .map((block) => ({ ...block, id: makeId() }));
+    applyBlocks([...blocksRef.current, ...copies]);
+    setSelectedIds(copies.map((c) => c.id));
+    toast.success(copies.length > 1 ? `${copies.length} blocos duplicados` : "Bloco duplicado");
+  }
+
+  function startInlineEdit(blockId: string) {
+    const block = blocksRef.current.find((b) => b.id === blockId);
+    if (!block) return;
+    setEditingBlockId(blockId);
+    setEditingText(block.label);
+  }
+
+  function commitInlineEdit() {
+    const id = editingBlockIdRef.current;
+    if (!id) return;
+    const text = editingTextRef.current;
+    applyBlocks(blocksRef.current.map((b) => (b.id === id ? { ...b, label: text } : b)));
+    setEditingBlockId(null);
+  }
+
+  function cancelInlineEdit() {
+    setEditingBlockId(null);
+  }
+
   // Expõe as ações aos listeners globais registrados uma única vez.
   undoRef.current = undo;
   redoRef.current = redo;
@@ -530,6 +682,10 @@ export default function Home() {
   updateSelectedRef.current = updateSelected;
   selectAllRef.current = selectAll;
   moveSelectedByRef.current = moveSelectedBy;
+  copySelectionRef.current = copySelection;
+  pasteClipboardRef.current = pasteClipboard;
+  duplicateInPlaceRef.current = duplicateInPlace;
+  commitInlineEditRef.current = commitInlineEdit;
 
   function handleBlockPointerDown(event: PointerEvent<HTMLDivElement>, block: Block) {
     if (isPreview || toolMode === "hand") return;
@@ -782,7 +938,7 @@ export default function Home() {
   }
 
   return (
-    <main className="studio-shell">
+    <main className={`studio-shell ${toolMode === "hand" || spaceHeld ? "tool-hand" : ""} ${spaceHeld ? "panning" : ""}`}>
       <header className="topbar">
         <div className="topbar-left">
           <AppMark />
@@ -865,13 +1021,15 @@ export default function Home() {
           </div>
           <div className={`canvas-scroller device-${device}`}>
             <div className="canvas-ruler-top"><span>0</span><span>200</span><span>400</span><span>600</span><span>800</span><span>1000</span></div>
-            <div className="canvas-stage-wrap" style={{ width: ARTBOARD.width * (zoom / 100), height: ARTBOARD.height * (zoom / 100) }}>
+            <div className="canvas-stage-wrap" style={{ width: ARTBOARD.width * (zoom / 100), height: ARTBOARD.height * (zoom / 100), transform: `translate(${panOffset.x}px, ${panOffset.y}px)` }}>
               <div ref={artboardRef} className={`artboard ${showGrid && !isPreview ? "with-grid" : ""}`} style={{ width: ARTBOARD.width, height: ARTBOARD.height, transform: `scale(${zoom / 100})` }} onPointerDown={() => { if (!isPreview) setSelectedIds([]); }} onDragOver={(event) => { if (!isPreview) event.preventDefault(); }} onDrop={(event) => { if (isPreview) return; const type = event.dataTransfer.getData("application/wireframe-type") as BlockType; if (type) addBlock(type); }}>
                 {!isPreview && <div className="artboard-meta"><span>{projectTitle.toUpperCase()} / {device.toUpperCase()}</span><span>{ARTBOARD.width} × {ARTBOARD.height}</span></div>}
-                {blocks.map((block) => <div key={block.id} className={`wire-block block-${block.type} ${selectedIds.includes(block.id) && !isPreview ? "selected" : ""}`} style={{ left: block.x, top: block.y, width: block.w, height: block.h, backgroundColor: block.style.fill, borderColor: block.style.border, color: block.style.text, borderRadius: block.style.radius }} onPointerDown={(event) => handleBlockPointerDown(event, block)}>
+                {blocks.map((block) => <div key={block.id} className={`wire-block block-${block.type} ${selectedIds.includes(block.id) && !isPreview ? "selected" : ""}`} style={{ left: block.x, top: block.y, width: block.w, height: block.h, backgroundColor: block.style.fill, borderColor: block.style.border, color: block.style.text, borderRadius: block.style.radius }} onPointerDown={(event) => handleBlockPointerDown(event, block)} onDoubleClick={() => { if (!isPreview) startInlineEdit(block.id); }}>
+                  {editingBlockId === block.id ? <textarea className="inline-edit" autoFocus value={editingText} onChange={(event) => setEditingText(event.target.value)} onBlur={commitInlineEdit} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); commitInlineEdit(); } if (event.key === "Escape") cancelInlineEdit(); }} style={{ fontSize: block.type === "heading" ? 30 : block.type === "button" ? 14 : 16, fontWeight: block.type === "heading" ? 700 : 500, color: block.style.text, textAlign: block.type === "button" ? "center" : "left" }} aria-label="Editar conteúdo do bloco" /> : <>
                   {selectedIds.length === 1 && selectedId === block.id && !isPreview && <div className="selection-label"><span>{blockTypeLabel(block.type)}</span><span>{Math.round(block.w)} × {Math.round(block.h)}</span></div>}
                   {block.type === "image" ? <><div className="image-sun" /><div className="image-mountains" /><span className="block-content image-label">{block.label}</span></> : block.type === "input" ? <><span className="input-dot" /> <span className="block-content">{block.label}</span></> : block.type === "divider" ? null : <span className="block-content">{block.label}</span>}
                   {selectedIds.length === 1 && selectedId === block.id && !isPreview && <><span className="resize-handle handle-se" onPointerDown={(event) => { event.stopPropagation(); setResizeState({ id: block.id, startX: event.clientX, startY: event.clientY, origW: block.w, origH: block.h, origX: block.x, origY: block.y, corner: "se" }); }} /><span className="resize-handle handle-sw" onPointerDown={(event) => { event.stopPropagation(); setResizeState({ id: block.id, startX: event.clientX, startY: event.clientY, origW: block.w, origH: block.h, origX: block.x, origY: block.y, corner: "sw" }); }} /></>}
+                </>}
                 </div>)}
               </div>
             </div>

@@ -63,19 +63,26 @@ O comando `pnpm check` valida o TypeScript. O comando `pnpm test` executa os tes
 | `Cmd/Ctrl + Z` | Desfazer |
 | `Cmd/Ctrl + Shift + Z` | Refazer |
 | `Cmd/Ctrl + D` | Duplicar a seleção |
+| `Cmd/Ctrl + Shift + D` | Duplicar na mesma posição (variação) |
+| `Cmd/Ctrl + C` | Copiar seleção |
+| `Cmd/Ctrl + V` | Colar (com offset de 24px) |
 | `Delete` ou `Backspace` | Remover a seleção |
 | `Shift + Clique` | Adicionar/remover bloco da seleção |
 | `Cmd/Ctrl + A` | Selecionar todos os blocos |
 | `Setas` | Mover o elemento em 1 px |
 | `Shift + Setas` | Mover o elemento em 8 px |
+| `Ctrl + Roda` | Zoom in/out |
+| `Espaço + Arraste` | Pan (mover tela) |
+| `Duplo clique` | Editar texto inline no canvas |
 | `V` | Ativar ferramenta de seleção |
 | `H` | Ativar ferramenta de mão |
 | `G` | Mostrar ou ocultar grade |
-| `Esc` | Limpar a seleção |
+| `Esc` | Limpar a seleção / fechar edição inline |
 
 ## Exportação
 
 - **PNG:** imagem raster em resolução 2x, adequada para compartilhar rapidamente.
+- **Seleção PNG:** exporta apenas os blocos selecionados com padding, útil para peças específicas.
 - **SVG:** arquivo vetorial leve, com textos e formas preservados.
 - **JSON:** arquivo editável com todas as páginas, blocos, posições e estilos. Pode ser importado de volta em outro navegador ou cópia local do projeto.
 
