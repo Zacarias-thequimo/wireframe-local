@@ -18,8 +18,9 @@ async function startServer() {
 
   app.use(express.static(staticPath));
 
-  // Handle client-side routing - serve index.html for all routes
-  app.get("*", (_req, res) => {
+  // Fallback para client-side routing - serve index.html para rotas não-arquivo.
+  // `app.use` em vez de `app.get("*")` para funcionar no Express 4 e 5.
+  app.use((_req, res) => {
     res.sendFile(path.join(staticPath, "index.html"));
   });
 

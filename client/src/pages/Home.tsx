@@ -40,47 +40,35 @@ import {
 } from "lucide-react";
 import { ChangeEvent, PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  alignPatches,
+  applyPatches,
+  ARTBOARDS,
+  Block,
+  BlockStyle,
+  BlockType,
+  blockTypeLabel,
+  buildSvg,
+  clamp,
+  createBlock,
+  Device,
+  distributePatches,
+  downloadFilename,
+  makeId,
+  normalizeHex,
+  normalizeProject,
+  parseNum,
+  ProjectFile,
+  reorderById,
+  selectionBounds,
+  snap,
+  SNAP_SIZE,
+  STORAGE_KEY,
+  WireframePage,
+} from "@/lib/wireframe";
 
-type BlockType = "heading" | "text" | "button" | "input" | "image" | "card" | "navbar" | "divider";
 type ToolMode = "select" | "hand";
-type Device = "desktop" | "tablet" | "mobile";
-
-type BlockStyle = {
-  fill: string;
-  border: string;
-  text: string;
-  radius: number;
-};
-
-type Block = {
-  id: string;
-  type: BlockType;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  label: string;
-  style: BlockStyle;
-};
-
-type WireframePage = {
-  id: string;
-  name: string;
-  blocks: Block[];
-};
-
-type ProjectFile = {
-  version: 1;
-  name: string;
-  device: Device;
-  blocks: Block[];
-  pages?: WireframePage[];
-  activePageId?: string;
-};
-
-const ARTBOARD = { width: 1100, height: 700 };
-const STORAGE_KEY = "wireframe-local-project";
-const SNAP_SIZE = 8;
+type AlignMode = "left" | "center" | "right" | "top" | "middle" | "bottom";
 
 const componentCatalog: Array<{
   type: BlockType;
@@ -162,78 +150,6 @@ const starterBlocks: Block[] = [
   },
 ];
 
-function makeId() {
-  return `block-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function defaultStyle(type: BlockType): BlockStyle {
-  const styles: Record<BlockType, BlockStyle> = {
-    heading: { fill: "#ffffff", border: "#d7d9e0", text: "#171922", radius: 12 },
-    text: { fill: "#ffffff", border: "#d7d9e0", text: "#686d7c", radius: 10 },
-    button: { fill: "#7162d9", border: "#7162d9", text: "#ffffff", radius: 10 },
-    input: { fill: "#ffffff", border: "#b9bdc9", text: "#8a8e9d", radius: 8 },
-    image: { fill: "#f1efff", border: "#bdb5f1", text: "#8a7fe1", radius: 16 },
-    card: { fill: "#fbfbfd", border: "#e4e5ea", text: "#686d7c", radius: 12 },
-    navbar: { fill: "#ffffff", border: "#d7d9e0", text: "#242631", radius: 12 },
-    divider: { fill: "#d7d9e0", border: "#d7d9e0", text: "#d7d9e0", radius: 0 },
-  };
-  return { ...styles[type] };
-}
-
-function defaultLabel(type: BlockType) {
-  const labels: Record<BlockType, string> = {
-    heading: "Novo título",
-    text: "Escreva uma breve descrição para orientar este bloco.",
-    button: "Ação principal",
-    input: "Digite aqui...",
-    image: "Imagem / mockup",
-    card: "Título do card\nDescrição complementar",
-    navbar: "MARCA  /  Item  Item  Item",
-    divider: "",
-  };
-  return labels[type];
-}
-
-function createBlock(type: BlockType, index: number): Block {
-  const sizes: Record<BlockType, [number, number]> = {
-    heading: [360, 92],
-    text: [330, 84],
-    button: [150, 48],
-    input: [300, 48],
-    image: [280, 200],
-    card: [310, 160],
-    navbar: [620, 60],
-    divider: [440, 3],
-  };
-  const [w, h] = sizes[type];
-  return {
-    id: makeId(),
-    type,
-    x: Math.min(1100 - w - 32, 90 + (index % 3) * 28),
-    y: Math.min(700 - h - 32, 130 + (index % 4) * 26),
-    w,
-    h,
-    label: defaultLabel(type),
-    style: defaultStyle(type),
-  };
-}
-
-function escapeXml(value: string) {
-  return value.replace(/[<>&'\"]/g, (char) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[char] ?? char);
-}
-
-function blockTypeLabel(type: BlockType) {
-  return componentCatalog.find((item) => item.type === type)?.label ?? "Bloco";
-}
-
-function formatSize(value: number) {
-  return `${Math.round(value)} px`;
-}
-
-function snap(value: number) {
-  return Math.round(value / SNAP_SIZE) * SNAP_SIZE;
-}
-
 function AppMark() {
   return (
     <div className="app-mark" aria-label="Wireframe Local">
@@ -249,9 +165,9 @@ export default function Home() {
   const [blocks, setBlocks] = useState<Block[]>(starterBlocks);
   const [pages, setPages] = useState<WireframePage[]>([{ id: "page-home", name: "Home", blocks: starterBlocks }]);
   const [activePageId, setActivePageId] = useState("page-home");
-  const [selectedId, setSelectedId] = useState("heading-starter");
-  const [history, setHistory] = useState<Block[][]>([]);
-  const [future, setFuture] = useState<Block[][]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>(["heading-starter"]);
+  // Histórico por página: trocar de página não apaga mais o undo/redo.
+  const [pageHistory, setPageHistory] = useState<Record<string, { past: Block[][]; future: Block[][] }>>({});
   const [zoom, setZoom] = useState(75);
   const [toolMode, setToolMode] = useState<ToolMode>("select");
   const [device, setDevice] = useState<Device>("desktop");
@@ -259,12 +175,16 @@ export default function Home() {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
   const [isSaved, setIsSaved] = useState(true);
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
+  const [pageDraft, setPageDraft] = useState("");
   const [dragState, setDragState] = useState<{
     id: string;
     startX: number;
     startY: number;
-    origX: number;
-    origY: number;
+    members: Array<{ id: string; origX: number; origY: number }>;
   } | null>(null);
   const [resizeState, setResizeState] = useState<{
     id: string;
@@ -279,8 +199,72 @@ export default function Home() {
   const [fileInputKey, setFileInputKey] = useState(0);
   const artboardRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const exportWrapRef = useRef<HTMLDivElement>(null);
 
+  // Último selecionado = primário (painel de propriedades, resize, atalhos).
+  const selectedId = selectedIds[selectedIds.length - 1] ?? "";
   const selectedBlock = useMemo(() => blocks.find((block) => block.id === selectedId) ?? null, [blocks, selectedId]);
+  const selectedBlocks = useMemo(() => blocks.filter((block) => selectedIds.includes(block.id)), [blocks, selectedIds]);
+
+  const artboard = ARTBOARDS[device];
+  const ARTBOARD = artboard;
+  const history = pageHistory[activePageId]?.past ?? [];
+  const future = pageHistory[activePageId]?.future ?? [];
+
+  // Refs espelham o estado para uso dentro de listeners globais (evita
+  // re-assinar pointermove/keydown a cada pixel e closures obsoletas).
+  const blocksRef = useRef(blocks);
+  blocksRef.current = blocks;
+  const selectedRef = useRef(selectedBlock);
+  selectedRef.current = selectedBlock;
+  const selectedIdsRef = useRef(selectedIds);
+  selectedIdsRef.current = selectedIds;
+  const historiesRef = useRef(pageHistory);
+  historiesRef.current = pageHistory;
+  const activePageIdRef = useRef(activePageId);
+  activePageIdRef.current = activePageId;
+  const deviceRef = useRef(device);
+  deviceRef.current = device;
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const isPreviewRef = useRef(isPreview);
+  isPreviewRef.current = isPreview;
+  const undoRef = useRef(() => {});
+  const redoRef = useRef(() => {});
+  const saveProjectRef = useRef(() => {});
+  const duplicateSelectedRef = useRef(() => {});
+  const deleteSelectedRef = useRef(() => {});
+  const selectAllRef = useRef(() => {});
+  const moveSelectedByRef = useRef((_dx: number, _dy: number) => {});
+  const updateSelectedRef = useRef((_patch: Partial<Block> | { style: Partial<BlockStyle> }) => {});
+
+  const leftVisible = !isPreview && !leftCollapsed;
+  const rightVisible = !isPreview && !rightCollapsed;
+
+  const filteredCatalog = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return componentCatalog;
+    return componentCatalog.filter((item) => item.label.toLowerCase().includes(query) || item.hint.toLowerCase().includes(query) || item.type.toLowerCase().includes(query));
+  }, [searchQuery]);
+
+  // Fecha o menu Exportar ao clicar fora ou ao pressionar Escape
+  useEffect(() => {
+    if (!isExportOpen) return;
+    const handlePointerDown = (event: globalThis.PointerEvent) => {
+      if (exportWrapRef.current && !exportWrapRef.current.contains(event.target as Node)) {
+        setIsExportOpen(false);
+      }
+    };
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsExportOpen(false);
+    };
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleKey);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [isExportOpen]);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -289,25 +273,36 @@ export default function Home() {
       const project = JSON.parse(stored) as ProjectFile;
       const loadedPages = project.pages?.length ? project.pages : [{ id: "page-home", name: "Home", blocks: project.blocks ?? starterBlocks }];
       const loadedActivePage = project.activePageId && loadedPages.some((page) => page.id === project.activePageId) ? project.activePageId : loadedPages[0].id;
-      const loadedBlocks = loadedPages.find((page) => page.id === loadedActivePage)?.blocks ?? loadedPages[0].blocks;
-      if (loadedBlocks?.length) {
+      const loadedBlocks = loadedPages.find((page) => page.id === loadedActivePage)?.blocks ?? loadedPages[0].blocks ?? [];
+      if (loadedPages.length) {
         setPages(loadedPages);
         setActivePageId(loadedActivePage);
         setBlocks(loadedBlocks);
         setProjectTitle(project.name || "Página inicial");
         setDevice(project.device || "desktop");
-        setSelectedId(loadedBlocks[0].id);
+        setSelectedIds(loadedBlocks[0]?.id ? [loadedBlocks[0].id] : []);
       }
     } catch {
       localStorage.removeItem(STORAGE_KEY);
     }
   }, []);
 
+  // Autosave com debounce: edições marcam "Não salvo" e a persistência
+  // acontece 500ms após a última mudança (antes marcava "Salvo" no mesmo frame).
   useEffect(() => {
-    const syncedPages = pages.map((page) => page.id === activePageId ? { ...page, blocks } : page);
-    const project: ProjectFile = { version: 1, name: projectTitle, device, blocks, pages: syncedPages, activePageId };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
-    setIsSaved(true);
+    setIsSaved(false);
+    const timer = window.setTimeout(() => {
+      try {
+        const currentBlocks = blocksRef.current;
+        const syncedPages = pages.map((page) => page.id === activePageId ? { ...page, blocks: currentBlocks } : page);
+        const project: ProjectFile = { version: 1, name: projectTitle, device, blocks: currentBlocks, pages: syncedPages, activePageId };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
+        setIsSaved(true);
+      } catch {
+        /* storage cheio/bloqueado: mantém "Não salvo" */
+      }
+    }, 500);
+    return () => window.clearTimeout(timer);
   }, [blocks, pages, activePageId, projectTitle, device]);
 
   useEffect(() => {
@@ -316,52 +311,78 @@ export default function Home() {
       const isTyping = ["INPUT", "TEXTAREA"].includes(target.tagName) || target.isContentEditable;
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && !isTyping) {
         event.preventDefault();
-        if (event.shiftKey) redo();
-        else undo();
+        if (event.shiftKey) redoRef.current();
+        else undoRef.current();
       }
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
         event.preventDefault();
-        saveProject();
+        saveProjectRef.current();
       }
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "d" && !isTyping) {
         event.preventDefault();
-        duplicateSelected();
+        duplicateSelectedRef.current();
       }
-      if (!isTyping && selectedBlock && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "a" && !isTyping) {
+        event.preventDefault();
+        selectAllRef.current();
+      }
+      const currents = selectedIdsRef.current
+        .map((id) => blocksRef.current.find((block) => block.id === id))
+        .filter((block): block is Block => block !== undefined);
+      if (!isTyping && currents.length && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
         event.preventDefault();
         const step = event.shiftKey ? SNAP_SIZE : 1;
-        const delta = { x: event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0, y: event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0 };
-        updateSelected({ x: Math.max(0, Math.min(ARTBOARD.width - selectedBlock.w, selectedBlock.x + delta.x)), y: Math.max(0, Math.min(ARTBOARD.height - selectedBlock.h, selectedBlock.y + delta.y)) });
+        const dx = event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0;
+        const dy = event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0;
+        moveSelectedByRef.current(dx, dy);
       }
       if (!isTyping && event.key.toLowerCase() === "v") setToolMode("select");
       if (!isTyping && event.key.toLowerCase() === "h") setToolMode("hand");
       if (!isTyping && event.key.toLowerCase() === "g") setShowGrid((show) => !show);
-      if ((event.key === "Delete" || event.key === "Backspace") && selectedId && !isTyping && !isPreview) {
+      if ((event.key === "Delete" || event.key === "Backspace") && selectedIdsRef.current.length && !isTyping && !isPreviewRef.current) {
         event.preventDefault();
-        deleteSelected();
+        deleteSelectedRef.current();
       }
-      if (event.key === "Escape") setSelectedId("");
+      if (event.key === "Escape") setSelectedIds([]);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  });
+  }, []);
 
   useEffect(() => {
     if (!dragState) return;
+    const dragId = dragState.id;
+    const { startX, startY, members } = dragState;
+    const grabbedOrig = members.find((m) => m.id === dragId) ?? members[0];
     const onPointerMove = (event: globalThis.PointerEvent) => {
-      const deltaX = (event.clientX - dragState.startX) / (zoom / 100);
-      const deltaY = (event.clientY - dragState.startY) / (zoom / 100);
-      const dragged = blocks.find((block) => block.id === dragState.id);
+      const current = blocksRef.current;
+      const dragged = current.find((block) => block.id === dragId);
       if (!dragged) return;
-      const rawX = Math.max(0, Math.min(ARTBOARD.width - dragged.w, Math.round(dragState.origX + deltaX)));
-      const rawY = Math.max(0, Math.min(ARTBOARD.height - dragged.h, Math.round(dragState.origY + deltaY)));
-      const peers = blocks.filter((block) => block.id !== dragged.id);
+      const dims = ARTBOARDS[deviceRef.current];
+      const deltaX = (event.clientX - startX) / (zoomRef.current / 100);
+      const deltaY = (event.clientY - startY) / (zoomRef.current / 100);
+      const rawX = clamp(Math.round(grabbedOrig.origX + deltaX), 0, dims.width - dragged.w);
+      const rawY = clamp(Math.round(grabbedOrig.origY + deltaY), 0, dims.height - dragged.h);
+      const peers = current.filter((block) => block.id !== dragId && !members.some((m) => m.id === block.id));
       const snapX = peers.find((peer) => Math.abs(peer.x - rawX) < 7 || Math.abs(peer.x + peer.w - (rawX + dragged.w)) < 7);
       const snapY = peers.find((peer) => Math.abs(peer.y - rawY) < 7 || Math.abs(peer.y + peer.h - (rawY + dragged.h)) < 7);
       const nextX = snapX ? (Math.abs(snapX.x - rawX) < 7 ? snapX.x : snapX.x + snapX.w - dragged.w) : snap(rawX);
       const nextY = snapY ? (Math.abs(snapY.y - rawY) < 7 ? snapY.y : snapY.y + snapY.h - dragged.h) : snap(rawY);
-      setBlocks((current) => current.map((block) => (block.id === dragState.id ? { ...block, x: nextX, y: nextY } : block)));
-      setIsSaved(false);
+      // O grupo acompanha o deslocamento aplicado ao bloco arrastado.
+      const shiftX = nextX - grabbedOrig.origX;
+      const shiftY = nextY - grabbedOrig.origY;
+      const byId = new Map(current.map((block) => [block.id, block] as const));
+      setBlocks(current.map((block) => {
+        const member = members.find((m) => m.id === block.id);
+        if (!member) return block;
+        const source = byId.get(block.id);
+        if (!source) return block;
+        return {
+          ...block,
+          x: clamp(Math.round(member.origX + shiftX), 0, dims.width - source.w),
+          y: clamp(Math.round(member.origY + shiftY), 0, dims.height - source.h),
+        };
+      }));
     };
     const onPointerUp = () => {
       setDragState(null);
@@ -372,22 +393,23 @@ export default function Home() {
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
     };
-  }, [dragState, zoom, blocks]);
+  }, [dragState]);
 
   useEffect(() => {
     if (!resizeState) return;
+    const { id, startX, startY, origW, origH, origX, origY, corner } = resizeState;
     const onPointerMove = (event: globalThis.PointerEvent) => {
-      const deltaX = (event.clientX - resizeState.startX) / (zoom / 100);
-      const deltaY = (event.clientY - resizeState.startY) / (zoom / 100);
+      const dims = ARTBOARDS[deviceRef.current];
+      const deltaX = (event.clientX - startX) / (zoomRef.current / 100);
+      const deltaY = (event.clientY - startY) / (zoomRef.current / 100);
       setBlocks((current) => current.map((block) => {
-        if (block.id !== resizeState.id) return block;
-        if (resizeState.corner === "sw") {
-          const nextW = Math.max(48, Math.min(ARTBOARD.width - resizeState.origX, snap(resizeState.origW - deltaX)));
-          return { ...block, x: snap(resizeState.origX + resizeState.origW - nextW), w: nextW, h: Math.max(3, Math.min(ARTBOARD.height - resizeState.origY, snap(resizeState.origH + deltaY))) };
+        if (block.id !== id) return block;
+        if (corner === "sw") {
+          const nextW = clamp(snap(origW - deltaX), 48, dims.width - origX);
+          return { ...block, x: snap(origX + origW - nextW), w: nextW, h: clamp(snap(origH + deltaY), 3, dims.height - origY) };
         }
-        return { ...block, w: Math.max(48, Math.min(ARTBOARD.width - resizeState.origX, snap(resizeState.origW + deltaX))), h: Math.max(3, Math.min(ARTBOARD.height - resizeState.origY, snap(resizeState.origH + deltaY))) };
+        return { ...block, w: clamp(snap(origW + deltaX), 48, dims.width - origX), h: clamp(snap(origH + deltaY), 3, dims.height - origY) };
       }));
-      setIsSaved(false);
     };
     const onPointerUp = () => setResizeState(null);
     window.addEventListener("pointermove", onPointerMove);
@@ -396,46 +418,58 @@ export default function Home() {
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
     };
-  }, [resizeState, zoom]);
+  }, [resizeState]);
 
   function applyBlocks(next: Block[], recordHistory = true) {
     if (recordHistory) {
-      setHistory((current) => [...current.slice(-24), blocks]);
-      setFuture([]);
+      const pageId = activePageIdRef.current;
+      const prev = blocksRef.current;
+      setPageHistory((current) => {
+        const stack = current[pageId] ?? { past: [], future: [] };
+        return { ...current, [pageId]: { past: [...stack.past.slice(-24), prev], future: [] } };
+      });
     }
     setBlocks(next);
-    setIsSaved(false);
   }
 
   function undo() {
-    const previous = history[history.length - 1];
+    const pageId = activePageIdRef.current;
+    const stack = historiesRef.current[pageId]?.past ?? [];
+    const previous = stack[stack.length - 1];
     if (!previous) return;
-    setFuture((current) => [blocks, ...current]);
-    setHistory((current) => current.slice(0, -1));
+    setPageHistory((current) => {
+      const entry = current[pageId] ?? { past: [], future: [] };
+      return { ...current, [pageId]: { past: entry.past.slice(0, -1), future: [blocksRef.current, ...entry.future] } };
+    });
     setBlocks(previous);
-    setIsSaved(false);
   }
 
   function redo() {
-    const next = future[0];
+    const pageId = activePageIdRef.current;
+    const stack = historiesRef.current[pageId]?.future ?? [];
+    const next = stack[0];
     if (!next) return;
-    setHistory((current) => [...current, blocks]);
-    setFuture((current) => current.slice(1));
+    setPageHistory((current) => {
+      const entry = current[pageId] ?? { past: [], future: [] };
+      return { ...current, [pageId]: { past: [...entry.past, blocksRef.current], future: entry.future.slice(1) } };
+    });
     setBlocks(next);
-    setIsSaved(false);
   }
 
   function addBlock(type: BlockType) {
-    const block = createBlock(type, blocks.length);
-    applyBlocks([...blocks, block]);
-    setSelectedId(block.id);
+    const current = blocksRef.current;
+    const dims = ARTBOARDS[deviceRef.current];
+    const block = createBlock(type, current.length, dims.width, dims.height);
+    applyBlocks([...current, block]);
+    setSelectedIds([block.id]);
     toast.success(`${blockTypeLabel(type)} adicionado`, { description: "Arraste o bloco para posicionar." });
   }
 
   function updateSelected(patch: Partial<Block> | { style: Partial<BlockStyle> }) {
-    if (!selectedBlock) return;
-    const next = blocks.map((block) => {
-      if (block.id !== selectedBlock.id) return block;
+    const current = selectedRef.current;
+    if (!current) return;
+    const next = blocksRef.current.map((block) => {
+      if (block.id !== current.id) return block;
       if ("style" in patch) return { ...block, style: { ...block.style, ...patch.style } };
       return { ...block, ...patch };
     });
@@ -443,84 +477,165 @@ export default function Home() {
   }
 
   function deleteSelected() {
-    if (!selectedBlock) return;
-    applyBlocks(blocks.filter((block) => block.id !== selectedBlock.id));
-    setSelectedId("");
-    toast("Bloco removido");
+    const ids = selectedIdsRef.current;
+    if (!ids.length) return;
+    applyBlocks(blocksRef.current.filter((block) => !ids.includes(block.id)));
+    setSelectedIds([]);
+    toast(ids.length > 1 ? `${ids.length} blocos removidos` : "Bloco removido");
   }
 
   function duplicateSelected() {
-    if (!selectedBlock) return;
-    const duplicate = { ...selectedBlock, id: makeId(), x: Math.min(ARTBOARD.width - selectedBlock.w, selectedBlock.x + 24), y: Math.min(ARTBOARD.height - selectedBlock.h, selectedBlock.y + 24) };
-    applyBlocks([...blocks, duplicate]);
-    setSelectedId(duplicate.id);
-    toast.success("Bloco duplicado");
+    const ids = selectedIdsRef.current;
+    if (!ids.length) return;
+    const dims = ARTBOARDS[deviceRef.current];
+    const copies = blocksRef.current
+      .filter((block) => ids.includes(block.id))
+      .map((block) => ({
+        ...block,
+        id: makeId(),
+        x: clamp(block.x + 24, 0, dims.width - block.w),
+        y: clamp(block.y + 24, 0, dims.height - block.h),
+      }));
+    applyBlocks([...blocksRef.current, ...copies]);
+    setSelectedIds(copies.map((block) => block.id));
+    toast.success(copies.length > 1 ? `${copies.length} blocos duplicados` : "Bloco duplicado");
   }
+
+  function selectAll() {
+    const ids = blocksRef.current.map((block) => block.id);
+    if (ids.length) setSelectedIds(ids);
+  }
+
+  function moveSelectedBy(dx: number, dy: number) {
+    const ids = selectedIdsRef.current;
+    if (!ids.length || (dx === 0 && dy === 0)) return;
+    const dims = ARTBOARDS[deviceRef.current];
+    const next = blocksRef.current.map((block) => {
+      if (!ids.includes(block.id)) return block;
+      return {
+        ...block,
+        x: clamp(Math.round(block.x + dx), 0, dims.width - block.w),
+        y: clamp(Math.round(block.y + dy), 0, dims.height - block.h),
+      };
+    });
+    applyBlocks(next);
+  }
+
+  // Expõe as ações aos listeners globais registrados uma única vez.
+  undoRef.current = undo;
+  redoRef.current = redo;
+  saveProjectRef.current = saveProject;
+  duplicateSelectedRef.current = duplicateSelected;
+  deleteSelectedRef.current = deleteSelected;
+  updateSelectedRef.current = updateSelected;
+  selectAllRef.current = selectAll;
+  moveSelectedByRef.current = moveSelectedBy;
 
   function handleBlockPointerDown(event: PointerEvent<HTMLDivElement>, block: Block) {
     if (isPreview || toolMode === "hand") return;
     event.stopPropagation();
-    setSelectedId(block.id);
-    setDragState({ id: block.id, startX: event.clientX, startY: event.clientY, origX: block.x, origY: block.y });
+    if (event.shiftKey) {
+      // Shift+clique alterna o bloco no grupo sem iniciar arraste.
+      setSelectedIds((current) =>
+        current.includes(block.id) ? current.filter((id) => id !== block.id) : [...current, block.id],
+      );
+      return;
+    }
+    const group = selectedIds.includes(block.id) && selectedIds.length > 1
+      ? blocks.filter((item) => selectedIds.includes(item.id))
+      : [block];
+    if (!selectedIds.includes(block.id)) setSelectedIds([block.id]);
+    setDragState({
+      id: block.id,
+      startX: event.clientX,
+      startY: event.clientY,
+      members: group.map((item) => ({ id: item.id, origX: item.x, origY: item.y })),
+    });
   }
 
   function exportJson() {
     const syncedPages = pages.map((page) => page.id === activePageId ? { ...page, blocks } : page);
     const file: ProjectFile = { version: 1, name: projectTitle, device, blocks, pages: syncedPages, activePageId };
-    download(`${projectTitle.toLowerCase().replace(/\s+/g, "-") || "wireframe"}.json`, JSON.stringify(file, null, 2), "application/json");
+    download(downloadFilename(projectTitle, "json"), JSON.stringify(file, null, 2), "application/json");
     setIsExportOpen(false);
     toast.success("Arquivo JSON exportado");
   }
 
   function createSvg() {
-    const body = blocks.map((block) => {
-      const lines = block.label.split("\n");
-      const rx = block.style.radius;
-      if (block.type === "divider") return `<rect x="${block.x}" y="${block.y}" width="${block.w}" height="${Math.max(2, block.h)}" fill="${block.style.fill}" />`;
-      const base = `<rect x="${block.x}" y="${block.y}" width="${block.w}" height="${block.h}" rx="${rx}" fill="${block.style.fill}" stroke="${block.style.border}" stroke-width="1" />`;
-      if (block.type === "image") {
-        return `${base}<path d="M ${block.x + 18} ${block.y + block.h - 20} L ${block.x + block.w * 0.42} ${block.y + block.h * 0.46} L ${block.x + block.w * 0.64} ${block.y + block.h * 0.68} L ${block.x + block.w - 18} ${block.y + 32}" fill="none" stroke="${block.style.text}" stroke-width="2" opacity=".7"/><circle cx="${block.x + block.w - 36}" cy="${block.y + 38}" r="10" fill="none" stroke="${block.style.text}" stroke-width="2" opacity=".7"/>`;
-      }
-      const fontSize = block.type === "heading" ? 30 : block.type === "button" ? 14 : 16;
-      const weight = block.type === "heading" ? 700 : 500;
-      const text = lines.map((line, index) => `<text x="${block.x + (block.type === "button" ? block.w / 2 : 18)}" y="${block.y + 30 + index * (fontSize + 6)}" fill="${block.style.text}" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="${weight}" ${block.type === "button" ? 'text-anchor="middle"' : ""}>${escapeXml(line)}</text>`).join("");
-      return `${base}${text}`;
-    }).join("");
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${ARTBOARD.width}" height="${ARTBOARD.height}" viewBox="0 0 ${ARTBOARD.width} ${ARTBOARD.height}"><rect width="100%" height="100%" fill="#ffffff"/>${body}</svg>`;
+    return buildSvg(blocks, ARTBOARD.width, ARTBOARD.height);
   }
 
   function exportSvg() {
-    download(`${projectTitle.toLowerCase().replace(/\s+/g, "-") || "wireframe"}.svg`, createSvg(), "image/svg+xml");
+    download(downloadFilename(projectTitle, "svg"), createSvg(), "image/svg+xml");
     setIsExportOpen(false);
     toast.success("SVG exportado");
   }
 
   function exportPng() {
+    exportPngFromBlocks(blocksRef.current, ARTBOARD.width, ARTBOARD.height, 0, 0, downloadFilename(projectTitle, "png"));
+  }
+
+  function exportSelectionPng() {
+    const ids = selectedIdsRef.current;
+    const list = blocksRef.current.filter((block) => ids.includes(block.id));
+    if (!list.length) return toast("Selecione ao menos um bloco");
+    const box = selectionBounds(list);
+    if (!box) return;
+    const pad = 16;
+    const ox = Math.max(0, Math.round(box.x - pad));
+    const oy = Math.max(0, Math.round(box.y - pad));
+    const w = Math.min(ARTBOARD.width - ox, Math.ceil(box.w + pad * 2));
+    const h = Math.min(ARTBOARD.height - oy, Math.ceil(box.h + pad * 2));
+    exportPngFromBlocks(list, w, h, ox, oy, downloadFilename(`${projectTitle}-selecao`, "png"));
+  }
+
+  function exportPngFromBlocks(list: Block[], width: number, height: number, offsetX: number, offsetY: number, filename: string) {
     const canvas = document.createElement("canvas");
     const scale = 2;
-    canvas.width = ARTBOARD.width * scale;
-    canvas.height = ARTBOARD.height * scale;
+    canvas.width = Math.max(1, width * scale);
+    canvas.height = Math.max(1, height * scale);
     const context = canvas.getContext("2d");
     if (!context) return;
+    const drawRoundRect = (x: number, y: number, w: number, h: number, r: number) => {
+      const radius = Math.max(0, Math.min(r, w / 2, h / 2));
+      context.beginPath();
+      // Usa a API nativa quando disponível, com fallback manual para browsers antigos
+      const native = (context as CanvasRenderingContext2D & { roundRect?: (x: number, y: number, w: number, h: number, r: number) => void }).roundRect;
+      if (typeof native === "function") {
+        native.call(context, x, y, w, h, radius);
+        return;
+      }
+      context.moveTo(x + radius, y);
+      context.lineTo(x + w - radius, y);
+      context.arcTo(x + w, y, x + w, y + radius, radius);
+      context.lineTo(x + w, y + h - radius);
+      context.arcTo(x + w, y + h, x + w - radius, y + h, radius);
+      context.lineTo(x + radius, y + h);
+      context.arcTo(x, y + h, x, y + h - radius, radius);
+      context.lineTo(x, y + radius);
+      context.arcTo(x, y, x + radius, y, radius);
+      context.closePath();
+    };
     context.scale(scale, scale);
     context.fillStyle = "#ffffff";
-    context.fillRect(0, 0, ARTBOARD.width, ARTBOARD.height);
-    blocks.forEach((block) => {
+    context.fillRect(0, 0, width, height);
+    list.forEach((block) => {
+      const bx = block.x - offsetX;
+      const by = block.y - offsetY;
       context.fillStyle = block.style.fill;
       context.strokeStyle = block.style.border;
       context.lineWidth = 1;
-      context.beginPath();
-      context.roundRect(block.x, block.y, block.w, block.h, block.style.radius);
+      drawRoundRect(bx, by, block.w, block.h, block.style.radius);
       context.fill();
       context.stroke();
       if (block.type === "image") {
         context.strokeStyle = block.style.text;
         context.globalAlpha = 0.65;
         context.beginPath();
-        context.moveTo(block.x + 18, block.y + block.h - 20);
-        context.lineTo(block.x + block.w * 0.42, block.y + block.h * 0.46);
-        context.lineTo(block.x + block.w * 0.64, block.y + block.h * 0.68);
-        context.lineTo(block.x + block.w - 18, block.y + 32);
+        context.moveTo(bx + 18, by + block.h - 20);
+        context.lineTo(bx + block.w * 0.42, by + block.h * 0.46);
+        context.lineTo(bx + block.w * 0.64, by + block.h * 0.68);
+        context.lineTo(bx + block.w - 18, by + 32);
         context.stroke();
         context.globalAlpha = 1;
         return;
@@ -528,10 +643,14 @@ export default function Home() {
       context.fillStyle = block.style.text;
       context.font = `${block.type === "heading" ? "700 30px" : block.type === "button" ? "500 14px" : "500 16px"} Arial`;
       context.textAlign = block.type === "button" ? "center" : "left";
-      block.label.split("\n").forEach((line, index) => context.fillText(line, block.x + (block.type === "button" ? block.w / 2 : 18), block.y + 30 + index * 22));
+      block.label.split("\n").forEach((line, index) => context.fillText(line, bx + (block.type === "button" ? block.w / 2 : 18), by + 30 + index * 22));
     });
     canvas.toBlob((blob) => {
-      if (blob) download(`${projectTitle.toLowerCase().replace(/\s+/g, "-") || "wireframe"}.png`, blob, "image/png");
+      if (!blob) {
+        toast.error("Não foi possível gerar o PNG");
+        return;
+      }
+      download(filename, blob, "image/png");
       toast.success("PNG exportado");
     });
     setIsExportOpen(false);
@@ -553,18 +672,15 @@ export default function Home() {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const project = JSON.parse(String(reader.result)) as ProjectFile;
-        if (!project.blocks?.length) throw new Error("empty");
-        applyBlocks(project.blocks);
-        setProjectTitle(project.name || "Wireframe importado");
-        setDevice(project.device || "desktop");
-        const importedPages = project.pages?.length ? project.pages : [{ id: "page-home", name: "Home", blocks: project.blocks }];
-        const importedActive = project.activePageId && importedPages.some((page) => page.id === project.activePageId) ? project.activePageId : importedPages[0].id;
-        setPages(importedPages);
-        setActivePageId(importedActive);
-        const importedBlocks = importedPages.find((page) => page.id === importedActive)?.blocks ?? project.blocks;
-        setBlocks(importedBlocks);
-        setSelectedId(importedBlocks[0]?.id ?? "");
+        const imported = normalizeProject(JSON.parse(String(reader.result)));
+        setProjectTitle(imported.name);
+        setDevice(imported.device);
+        setZoom(ARTBOARDS[imported.device].zoom);
+        setPages(imported.pages);
+        setActivePageId(imported.activePageId);
+        setBlocks(imported.blocks);
+        setSelectedIds(imported.blocks[0]?.id ? [imported.blocks[0].id] : []);
+        setPageHistory({});
         toast.success("Wireframe importado");
       } catch {
         toast.error("Não foi possível importar este arquivo", { description: "Use um JSON exportado pelo Wireframe Local." });
@@ -576,45 +692,49 @@ export default function Home() {
   }
 
   function saveProject() {
-    const syncedPages = pages.map((page) => page.id === activePageId ? { ...page, blocks } : page);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, name: projectTitle, device, blocks, pages: syncedPages, activePageId } satisfies ProjectFile));
-    setIsSaved(true);
-    toast.success("Alterações salvas localmente");
+    try {
+      const current = blocksRef.current;
+      const syncedPages = pages.map((page) => page.id === activePageId ? { ...page, blocks: current } : page);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, name: projectTitle, device, blocks: current, pages: syncedPages, activePageId } satisfies ProjectFile));
+      setIsSaved(true);
+      toast.success("Alterações salvas localmente");
+    } catch {
+      toast.error("Não foi possível salvar", { description: "Armazenamento local indisponível ou cheio." });
+    }
   }
 
   function updateDevice(nextDevice: Device) {
     setDevice(nextDevice);
-    setZoom(nextDevice === "desktop" ? 75 : nextDevice === "tablet" ? 68 : 56);
+    setZoom(ARTBOARDS[nextDevice].zoom);
   }
 
   function switchPage(pageId: string) {
-    const currentPage = pages.find((page) => page.id === activePageId);
     const nextPage = pages.find((page) => page.id === pageId);
-    if (!nextPage || !currentPage) return;
-    setPages((current) => current.map((page) => page.id === activePageId ? { ...page, blocks } : page));
+    if (!nextPage || pageId === activePageId) return;
+    setPages((current) => current.map((page) => page.id === activePageId ? { ...page, blocks: blocksRef.current } : page));
     setActivePageId(pageId);
     setBlocks(nextPage.blocks);
-    setSelectedId(nextPage.blocks[0]?.id ?? "");
-    setHistory([]);
-    setFuture([]);
+    setSelectedIds(nextPage.blocks[0]?.id ? [nextPage.blocks[0].id] : []);
+    // O histórico da página anterior é preservado em pageHistory.
   }
 
   function addPage() {
-    const page: WireframePage = { id: makeId(), name: `Página ${pages.length + 1}`, blocks: [] };
-    setPages((current) => [...current.map((item) => item.id === activePageId ? { ...item, blocks } : item), page]);
+    const page: WireframePage = { id: makeId("page"), name: `Página ${pages.length + 1}`, blocks: [] };
+    setPages((current) => [...current.map((item) => item.id === activePageId ? { ...item, blocks: blocksRef.current } : item), page]);
     setActivePageId(page.id);
     setBlocks([]);
-    setSelectedId("");
-    setHistory([]);
-    setFuture([]);
+    setSelectedIds([]);
     toast.success("Nova página criada");
+    setEditingPageId(page.id);
+    setPageDraft(page.name);
   }
 
-  function renamePage(pageId: string) {
-    const page = pages.find((item) => item.id === pageId);
-    if (!page) return;
-    const name = window.prompt("Nome da página", page.name)?.trim();
-    if (name) setPages((current) => current.map((item) => item.id === pageId ? { ...item, name } : item));
+  function commitPageRename(pageId: string) {
+    const name = pageDraft.trim();
+    if (name) {
+      setPages((current) => current.map((item) => item.id === pageId ? { ...item, name: name.slice(0, 40) } : item));
+    }
+    setEditingPageId(null);
   }
 
   function deletePage(pageId: string) {
@@ -625,24 +745,40 @@ export default function Home() {
     if (pageId === activePageId) {
       setActivePageId(nextPage.id);
       setBlocks(nextPage.blocks);
-      setSelectedId(nextPage.blocks[0]?.id ?? "");
+      setSelectedIds(nextPage.blocks[0]?.id ? [nextPage.blocks[0].id] : []);
     }
+    if (editingPageId === pageId) setEditingPageId(null);
+    setPageHistory((current) => {
+      const { [pageId]: _removed, ...rest } = current;
+      return rest;
+    });
     toast("Página removida");
   }
 
-  function alignSelected(alignment: "left" | "center" | "right" | "top" | "middle" | "bottom") {
-    if (!selectedBlock) return;
-    const peers = blocks.filter((block) => block.id !== selectedBlock.id);
-    if (!peers.length) return toast("Adicione outro elemento para alinhar");
-    const patch: Partial<Block> = {};
-    const reference = peers[0];
-    if (["left", "center", "right"].includes(alignment)) {
-      patch.x = alignment === "right" ? reference.x + reference.w - selectedBlock.w : alignment === "center" ? reference.x + (reference.w - selectedBlock.w) / 2 : reference.x;
-    } else {
-      patch.y = alignment === "bottom" ? reference.y + reference.h - selectedBlock.h : alignment === "middle" ? reference.y + (reference.h - selectedBlock.h) / 2 : reference.y;
-    }
-    updateSelected(patch);
-    toast.success("Elemento alinhado");
+  function moveLayer(fromId: string, toId: string) {
+    const current = blocksRef.current;
+    const next = reorderById(current, fromId, toId);
+    if (next === current) return;
+    applyBlocks(next);
+  }
+
+  function alignSelected(alignment: AlignMode) {
+    const ids = selectedIdsRef.current;
+    if (!ids.length) return;
+    const dims = ARTBOARDS[deviceRef.current];
+    const patches = alignPatches(blocksRef.current, ids, alignment, dims.width, dims.height);
+    if (!Object.keys(patches).length) return;
+    applyBlocks(applyPatches(blocksRef.current, patches));
+    toast.success(ids.length > 1 ? "Elementos alinhados" : "Elemento alinhado ao canvas");
+  }
+
+  function distributeSelected(axis: "x" | "y") {
+    const ids = selectedIdsRef.current;
+    if (ids.length < 3) return toast("Selecione 3 ou mais elementos para distribuir");
+    const patches = distributePatches(blocksRef.current, ids, axis);
+    if (!Object.keys(patches).length) return;
+    applyBlocks(applyPatches(blocksRef.current, patches));
+    toast.success("Elementos distribuídos");
   }
 
   return (
@@ -673,24 +809,25 @@ export default function Home() {
           <span className="header-divider small" />
           <div className="save-state"><span className={isSaved ? "saved-dot" : "unsaved-dot"} />{isSaved ? "Salvo localmente" : "Não salvo"}</div>
           <button className="button-secondary" onClick={saveProject}><span className="save-icon">⌘</span> Salvar</button>
-          <div className="export-wrap">
-            <button className="button-primary" onClick={() => setIsExportOpen((open) => !open)}><Download size={15} /> Exportar <ChevronDown size={14} /></button>
-            {isExportOpen && <div className="export-menu">
+          <div className="export-wrap" ref={exportWrapRef}>
+            <button className="button-primary" onClick={() => setIsExportOpen((open) => !open)} aria-expanded={isExportOpen} aria-haspopup="menu"><Download size={15} /> Exportar <ChevronDown size={14} /></button>
+            {isExportOpen && <div className="export-menu" role="menu">
               <button onClick={exportPng}><ImageIcon size={15} /><span>Exportar PNG</span><small>imagem</small></button>
+              {selectedIds.length > 0 && <button onClick={exportSelectionPng}><ImageIcon size={15} /><span>Seleção PNG</span><small>{selectedIds.length} bloco(s)</small></button>}
               <button onClick={exportSvg}><FileText size={15} /><span>Exportar SVG</span><small>vetor</small></button>
               <button onClick={exportJson}><FileJson size={15} /><span>Exportar JSON</span><small>editável</small></button>
             </div>}
           </div>
-          <button className="avatar-button" aria-label="Perfil">ML</button>
+          <button className="avatar-button" aria-label="Perfil" title="Projeto local — sem conta" onClick={() => toast("Projeto 100% local", { description: "Nenhuma conta necessária. Use Exportar para backup." })}>ML</button>
         </div>
       </header>
 
-      <div className="workspace">
-        {!isPreview && <aside className="left-sidebar">
-          <div className="sidebar-heading-row"><div><p className="eyebrow">BIBLIOTECA</p><h2>Componentes</h2></div><button className="plain-icon"><PanelLeft size={15} /></button></div>
-          <div className="search-field"><Search size={15} /><input placeholder="Buscar componente" aria-label="Buscar componente" /></div>
+      <div className={`workspace ${isPreview ? "is-preview" : ""} ${!leftVisible ? "hide-left" : ""} ${!rightVisible ? "hide-right" : ""}`}>
+        {leftVisible ? <aside className="left-sidebar">
+          <div className="sidebar-heading-row"><div><p className="eyebrow">BIBLIOTECA</p><h2>Componentes</h2></div><button className="plain-icon" onClick={() => setLeftCollapsed(true)} title="Fechar painel lateral"><PanelLeft size={15} /></button></div>
+          <div className="search-field"><Search size={15} /><input placeholder="Buscar componente" aria-label="Buscar componente" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} />{searchQuery && <button className="search-clear" onClick={() => setSearchQuery("")} aria-label="Limpar busca"><X size={13} /></button>}</div>
           <div className="component-grid">
-            {componentCatalog.map((item) => {
+            {filteredCatalog.length === 0 ? <p className="search-empty">Nenhum componente para “{searchQuery}”.</p> : filteredCatalog.map((item) => {
               const Icon = item.icon;
               return <button className="component-card" key={item.type} onClick={() => addBlock(item.type)} draggable onDragStart={(event) => event.dataTransfer.setData("application/wireframe-type", item.type)}>
                 <span className={`component-icon ${item.accent}`}><Icon size={18} strokeWidth={1.8} /></span>
@@ -700,9 +837,10 @@ export default function Home() {
             })}
           </div>
           <div className="sidebar-tip"><Sparkles size={15} /><div><strong>Dica rápida</strong><p>Clique para adicionar. Arraste para posicionar.</p></div></div>
-          <div className="layers-block"><div className="sidebar-heading-row compact"><p className="eyebrow">CAMADAS <span>{blocks.length}</span></p><button className="plain-icon"><MoreHorizontal size={15} /></button></div><div className="layer-list">{blocks.slice().reverse().map((block) => <button key={block.id} className={`layer-row ${selectedId === block.id ? "selected" : ""}`} onClick={() => setSelectedId(block.id)}><span className="layer-type-icon"><Layers3 size={14} /></span><span>{blockTypeLabel(block.type)}</span><span className="layer-dots">···</span></button>)}</div></div>
-          <div className="pages-block"><div className="sidebar-heading-row compact"><p className="eyebrow">PÁGINAS <span>{pages.length}</span></p><button className="plain-icon" onClick={addPage} title="Nova página"><Plus size={15} /></button></div><div className="page-list">{pages.map((page) => <div key={page.id} className={`page-row ${page.id === activePageId ? "selected" : ""}`}><button onClick={() => switchPage(page.id)}><FileText size={13} /><span>{page.name}</span><small>{page.blocks.length}</small></button><div className="page-actions"><button onClick={() => renamePage(page.id)} title="Renomear página"><MoreHorizontal size={13} /></button><button onClick={() => deletePage(page.id)} title="Excluir página"><Trash2 size={12} /></button></div></div>)}</div></div>
-        </aside>}
+          <div className="layers-block"><div className="sidebar-heading-row compact"><p className="eyebrow">CAMADAS <span>{blocks.length}</span></p><button className="plain-icon" onClick={() => setSelectedIds([])} title="Limpar seleção"><X size={14} /></button></div><div className="layer-list">{blocks.length === 0 ? <p className="search-empty">Canvas vazio — adicione um componente.</p> : blocks.slice().reverse().map((block) => <button key={block.id} className={`layer-row ${selectedIds.includes(block.id) ? "selected" : ""}`} draggable onDragStart={(event) => { event.dataTransfer.setData("application/wireframe-layer", block.id); event.dataTransfer.effectAllowed = "move"; }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const fromId = event.dataTransfer.getData("application/wireframe-layer"); if (fromId) moveLayer(fromId, block.id); }} onClick={(event) => { if (event.shiftKey) setSelectedIds((current) => current.includes(block.id) ? current.filter((id) => id !== block.id) : [...current, block.id]); else setSelectedIds([block.id]); }} title="Arraste para reordenar. Shift+clique para seleção múltipla"><span className="layer-type-icon"><Layers3 size={14} /></span><span>{blockTypeLabel(block.type)}</span><span className="layer-dots">···</span></button>)}</div></div>
+          <div className="pages-block"><div className="sidebar-heading-row compact"><p className="eyebrow">PÁGINAS <span>{pages.length}</span></p><button className="plain-icon" onClick={addPage} title="Nova página"><Plus size={15} /></button></div><div className="page-list">{pages.map((page) => <div key={page.id} className={`page-row ${page.id === activePageId ? "selected" : ""}`}>{editingPageId === page.id ? <input className="page-rename-input" autoFocus value={pageDraft} onChange={(event) => setPageDraft(event.target.value)} onBlur={() => commitPageRename(page.id)} onKeyDown={(event) => { if (event.key === "Enter") commitPageRename(page.id); if (event.key === "Escape") setEditingPageId(null); }} onClick={(event) => event.stopPropagation()} aria-label="Nome da página" maxLength={40} /> : <button onClick={() => switchPage(page.id)} onDoubleClick={() => { setEditingPageId(page.id); setPageDraft(page.name); }} title="Duplo clique para renomear"><FileText size={13} /><span>{page.name}</span><small>{page.blocks.length}</small></button>}<div className="page-actions"><button onClick={() => { setEditingPageId(page.id); setPageDraft(page.name); }} title="Renomear página"><MoreHorizontal size={13} /></button><button onClick={() => deletePage(page.id)} title="Excluir página"><Trash2 size={12} /></button></div></div>)}</div></div>
+        </aside> : null}
+        {!leftVisible && !isPreview && <button className="sidebar-rail left" onClick={() => setLeftCollapsed(false)} title="Abrir biblioteca"><PanelLeft size={15} /></button>}
 
         <section className={`canvas-area ${isPreview ? "preview-mode" : ""}`}>
           <div className="canvas-toolbar">
@@ -728,43 +866,50 @@ export default function Home() {
           <div className={`canvas-scroller device-${device}`}>
             <div className="canvas-ruler-top"><span>0</span><span>200</span><span>400</span><span>600</span><span>800</span><span>1000</span></div>
             <div className="canvas-stage-wrap" style={{ width: ARTBOARD.width * (zoom / 100), height: ARTBOARD.height * (zoom / 100) }}>
-              <div ref={artboardRef} className={`artboard ${showGrid ? "with-grid" : ""}`} style={{ width: ARTBOARD.width, height: ARTBOARD.height, transform: `scale(${zoom / 100})` }} onPointerDown={() => setSelectedId("")} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { const type = event.dataTransfer.getData("application/wireframe-type") as BlockType; if (type) addBlock(type); }}>
-                <div className="artboard-meta"><span>HOME / DESKTOP</span><span>{ARTBOARD.width} × {ARTBOARD.height}</span></div>
-                {blocks.map((block) => <div key={block.id} className={`wire-block block-${block.type} ${selectedId === block.id && !isPreview ? "selected" : ""}`} style={{ left: block.x, top: block.y, width: block.w, height: block.h, backgroundColor: block.style.fill, borderColor: block.style.border, color: block.style.text, borderRadius: block.style.radius }} onPointerDown={(event) => handleBlockPointerDown(event, block)}>
-                  {selectedId === block.id && !isPreview && <div className="selection-label"><span>{blockTypeLabel(block.type)}</span><span>{Math.round(block.w)} × {Math.round(block.h)}</span></div>}
+              <div ref={artboardRef} className={`artboard ${showGrid && !isPreview ? "with-grid" : ""}`} style={{ width: ARTBOARD.width, height: ARTBOARD.height, transform: `scale(${zoom / 100})` }} onPointerDown={() => { if (!isPreview) setSelectedIds([]); }} onDragOver={(event) => { if (!isPreview) event.preventDefault(); }} onDrop={(event) => { if (isPreview) return; const type = event.dataTransfer.getData("application/wireframe-type") as BlockType; if (type) addBlock(type); }}>
+                {!isPreview && <div className="artboard-meta"><span>{projectTitle.toUpperCase()} / {device.toUpperCase()}</span><span>{ARTBOARD.width} × {ARTBOARD.height}</span></div>}
+                {blocks.map((block) => <div key={block.id} className={`wire-block block-${block.type} ${selectedIds.includes(block.id) && !isPreview ? "selected" : ""}`} style={{ left: block.x, top: block.y, width: block.w, height: block.h, backgroundColor: block.style.fill, borderColor: block.style.border, color: block.style.text, borderRadius: block.style.radius }} onPointerDown={(event) => handleBlockPointerDown(event, block)}>
+                  {selectedIds.length === 1 && selectedId === block.id && !isPreview && <div className="selection-label"><span>{blockTypeLabel(block.type)}</span><span>{Math.round(block.w)} × {Math.round(block.h)}</span></div>}
                   {block.type === "image" ? <><div className="image-sun" /><div className="image-mountains" /><span className="block-content image-label">{block.label}</span></> : block.type === "input" ? <><span className="input-dot" /> <span className="block-content">{block.label}</span></> : block.type === "divider" ? null : <span className="block-content">{block.label}</span>}
-                  {selectedId === block.id && !isPreview && <><span className="resize-handle handle-se" onPointerDown={(event) => { event.stopPropagation(); setResizeState({ id: block.id, startX: event.clientX, startY: event.clientY, origW: block.w, origH: block.h, origX: block.x, origY: block.y, corner: "se" }); }} /><span className="resize-handle handle-sw" onPointerDown={(event) => { event.stopPropagation(); setResizeState({ id: block.id, startX: event.clientX, startY: event.clientY, origW: block.w, origH: block.h, origX: block.x, origY: block.y, corner: "sw" }); }} /></>}
+                  {selectedIds.length === 1 && selectedId === block.id && !isPreview && <><span className="resize-handle handle-se" onPointerDown={(event) => { event.stopPropagation(); setResizeState({ id: block.id, startX: event.clientX, startY: event.clientY, origW: block.w, origH: block.h, origX: block.x, origY: block.y, corner: "se" }); }} /><span className="resize-handle handle-sw" onPointerDown={(event) => { event.stopPropagation(); setResizeState({ id: block.id, startX: event.clientX, startY: event.clientY, origW: block.w, origH: block.h, origX: block.x, origY: block.y, corner: "sw" }); }} /></>}
                 </div>)}
               </div>
             </div>
-            <div className="canvas-hint"><Move size={13} /> Arraste elementos para organizar o fluxo</div>
+            {!isPreview && <div className="canvas-hint"><Move size={13} /> Arraste para mover · Shift+clique para seleção múltipla</div>}
           </div>
-          {isPreview && <div className="preview-badge"><Eye size={14} /> Modo preview <button onClick={() => setIsPreview(false)}><X size={13} /></button></div>}
+          {isPreview && <div className="preview-badge"><Eye size={14} /> Modo preview — {blocks.length} bloco(s) <button onClick={() => setIsPreview(false)} aria-label="Sair do preview"><X size={13} /></button></div>}
         </section>
 
-        {!isPreview && <aside className="right-sidebar">
-          <div className="inspector-header"><div><p className="eyebrow">PROPRIEDADES</p><h2>{selectedBlock ? blockTypeLabel(selectedBlock.type) : "Nenhuma seleção"}</h2></div><button className="plain-icon"><PanelRight size={15} /></button></div>
-          {selectedBlock ? <div className="inspector-content">
+        {rightVisible ? <aside className="right-sidebar">
+          <div className="inspector-header"><div><p className="eyebrow">PROPRIEDADES</p><h2>{selectedBlocks.length > 1 ? `${selectedBlocks.length} elementos` : selectedBlock ? blockTypeLabel(selectedBlock.type) : "Nenhuma seleção"}</h2></div><button className="plain-icon" onClick={() => setRightCollapsed(true)} title="Fechar propriedades"><PanelRight size={15} /></button></div>
+          {selectedBlocks.length > 1 ? <div className="inspector-content">
+            <div className="inspector-section first"><div className="section-title"><span>Seleção múltipla</span><span className="section-kicker">{selectedBlocks.length} blocos</span></div>
+              <p className="alignment-hint">Arraste qualquer bloco do grupo para mover todos. Shift+clique remove um bloco do grupo.</p>
+            </div>
+            <div className="inspector-section alignment-section"><div className="section-title"><span>Alinhamento</span><Move size={13} /></div><div className="alignment-grid"><button onClick={() => alignSelected("left")} title="Alinhar à esquerda">←</button><button onClick={() => alignSelected("center")} title="Centralizar horizontalmente">↔</button><button onClick={() => alignSelected("right")} title="Alinhar à direita">→</button><button onClick={() => alignSelected("top")} title="Alinhar ao topo">↑</button><button onClick={() => alignSelected("middle")} title="Centralizar verticalmente">↕</button><button onClick={() => alignSelected("bottom")} title="Alinhar à base">↓</button></div><div className="section-title" style={{ marginTop: 8 }}><span>Distribuir</span></div><div className="alignment-grid distribute-grid"><button onClick={() => distributeSelected("x")} title="Distribuir horizontalmente">⇹</button><button onClick={() => distributeSelected("y")} title="Distribuir verticalmente">⇅</button></div><p className="alignment-hint">Alinha dentro do grupo. Com 1 bloco, alinha ao canvas.</p></div>
+            <div className="inspector-actions"><button onClick={duplicateSelected}><Copy size={14} /> Duplicar ({selectedBlocks.length})</button><button className="danger" onClick={deleteSelected}><Trash2 size={14} /> Remover ({selectedBlocks.length})</button></div>
+          </div> : selectedBlock ? <div className="inspector-content">
             <div className="inspector-section first"><div className="section-title"><span>Conteúdo</span><span className="section-kicker">{selectedBlock.id.slice(0, 8)}</span></div>
               <textarea className="content-input" rows={selectedBlock.type === "heading" ? 3 : 2} value={selectedBlock.label} onChange={(event) => updateSelected({ label: event.target.value })} aria-label="Conteúdo do bloco" />
             </div>
             <div className="inspector-section"><div className="section-title"><span>Posição e tamanho</span><Lock size={13} /></div>
-              <div className="field-grid"><label><span>X</span><input type="number" value={Math.round(selectedBlock.x)} onChange={(event) => updateSelected({ x: Number(event.target.value) })} /></label><label><span>Y</span><input type="number" value={Math.round(selectedBlock.y)} onChange={(event) => updateSelected({ y: Number(event.target.value) })} /></label><label><span>W</span><input type="number" value={Math.round(selectedBlock.w)} onChange={(event) => updateSelected({ w: Math.max(8, Number(event.target.value)) })} /></label><label><span>H</span><input type="number" value={Math.round(selectedBlock.h)} onChange={(event) => updateSelected({ h: Math.max(3, Number(event.target.value)) })} /></label></div>
+              <div className="field-grid"><label><span>X</span><input type="number" value={Math.round(selectedBlock.x)} onChange={(event) => updateSelected({ x: clamp(parseNum(event.target.value, selectedBlock.x), 0, ARTBOARD.width - selectedBlock.w) })} /></label><label><span>Y</span><input type="number" value={Math.round(selectedBlock.y)} onChange={(event) => updateSelected({ y: clamp(parseNum(event.target.value, selectedBlock.y), 0, ARTBOARD.height - selectedBlock.h) })} /></label><label><span>W</span><input type="number" min={8} value={Math.round(selectedBlock.w)} onChange={(event) => updateSelected({ w: clamp(parseNum(event.target.value, selectedBlock.w), 8, ARTBOARD.width - selectedBlock.x) })} /></label><label><span>H</span><input type="number" min={3} value={Math.round(selectedBlock.h)} onChange={(event) => updateSelected({ h: clamp(parseNum(event.target.value, selectedBlock.h), 3, ARTBOARD.height - selectedBlock.y) })} /></label></div>
             </div>
             <div className="inspector-section"><div className="section-title"><span>Aparência</span><Palette size={13} /></div>
-              <div className="color-row"><span>Fundo</span><label className="color-picker"><input type="color" value={selectedBlock.style.fill} onChange={(event) => updateSelected({ style: { fill: event.target.value } })} /><span style={{ backgroundColor: selectedBlock.style.fill }} /><code>{selectedBlock.style.fill.toUpperCase()}</code></label></div>
-              <div className="color-row"><span>Contorno</span><label className="color-picker"><input type="color" value={selectedBlock.style.border} onChange={(event) => updateSelected({ style: { border: event.target.value } })} /><span style={{ backgroundColor: selectedBlock.style.border }} /><code>{selectedBlock.style.border.toUpperCase()}</code></label></div>
-              <div className="color-row"><span>Texto</span><label className="color-picker"><input type="color" value={selectedBlock.style.text} onChange={(event) => updateSelected({ style: { text: event.target.value } })} /><span style={{ backgroundColor: selectedBlock.style.text }} /><code>{selectedBlock.style.text.toUpperCase()}</code></label></div>
+              <div className="color-row"><span>Fundo</span><label className="color-picker"><input type="color" value={normalizeHex(selectedBlock.style.fill, "#ffffff")} onChange={(event) => updateSelected({ style: { fill: event.target.value } })} /><span style={{ backgroundColor: selectedBlock.style.fill }} /><code>{selectedBlock.style.fill.toUpperCase()}</code></label></div>
+              <div className="color-row"><span>Contorno</span><label className="color-picker"><input type="color" value={normalizeHex(selectedBlock.style.border, "#d7d9e0")} onChange={(event) => updateSelected({ style: { border: event.target.value } })} /><span style={{ backgroundColor: selectedBlock.style.border }} /><code>{selectedBlock.style.border.toUpperCase()}</code></label></div>
+              <div className="color-row"><span>Texto</span><label className="color-picker"><input type="color" value={normalizeHex(selectedBlock.style.text, "#242631")} onChange={(event) => updateSelected({ style: { text: event.target.value } })} /><span style={{ backgroundColor: selectedBlock.style.text }} /><code>{selectedBlock.style.text.toUpperCase()}</code></label></div>
               <label className="range-row"><span>Raio <strong>{selectedBlock.style.radius}px</strong></span><input type="range" min="0" max="28" value={selectedBlock.style.radius} onChange={(event) => updateSelected({ style: { radius: Number(event.target.value) } })} /></label>
             </div>
-            <div className="inspector-section alignment-section"><div className="section-title"><span>Alinhamento</span><Move size={13} /></div><div className="alignment-grid"><button onClick={() => alignSelected("left")} title="Alinhar à esquerda">←</button><button onClick={() => alignSelected("center")} title="Centralizar horizontalmente">↔</button><button onClick={() => alignSelected("right")} title="Alinhar à direita">→</button><button onClick={() => alignSelected("top")} title="Alinhar ao topo">↑</button><button onClick={() => alignSelected("middle")} title="Centralizar verticalmente">↕</button><button onClick={() => alignSelected("bottom")} title="Alinhar à base">↓</button></div><p className="alignment-hint">Arraste perto de outro bloco para encaixar automaticamente.</p></div>
+            <div className="inspector-section alignment-section"><div className="section-title"><span>Alinhamento</span><Move size={13} /></div><div className="alignment-grid"><button onClick={() => alignSelected("left")} title="Alinhar à esquerda do canvas">←</button><button onClick={() => alignSelected("center")} title="Centralizar no canvas">↔</button><button onClick={() => alignSelected("right")} title="Alinhar à direita do canvas">→</button><button onClick={() => alignSelected("top")} title="Alinhar ao topo do canvas">↑</button><button onClick={() => alignSelected("middle")} title="Centralizar verticalmente no canvas">↕</button><button onClick={() => alignSelected("bottom")} title="Alinhar à base do canvas">↓</button></div><p className="alignment-hint">Com 1 bloco, alinha ao canvas. Selecione vários (Shift+clique) para alinhar em grupo.</p></div>
             <div className="inspector-actions"><button onClick={duplicateSelected}><Copy size={14} /> Duplicar</button><button className="danger" onClick={deleteSelected}><Trash2 size={14} /> Remover</button></div>
           </div> : <div className="empty-inspector"><div className="empty-inspector-icon"><Maximize2 size={17} /></div><strong>Selecione um elemento</strong><p>Clique em um bloco no canvas para editar suas propriedades.</p></div>}
-          <div className="inspector-footer"><div className="status-line"><span className="online-dot" /> Projeto salvo no navegador</div><button className="plain-icon" title="Mais opções"><MoreHorizontal size={16} /></button></div>
-        </aside>}
+          <div className="inspector-footer"><div className="status-line"><span className="online-dot" /> Projeto salvo no navegador</div><button className="plain-icon" title="Salvar agora" onClick={saveProject}><Download size={15} /></button></div>
+        </aside> : null}
+        {!rightVisible && !isPreview && <button className="sidebar-rail right" onClick={() => setRightCollapsed(false)} title="Abrir propriedades"><PanelRight size={15} /></button>}
       </div>
       <input key={fileInputKey} ref={fileInputRef} type="file" accept="application/json,.json" className="sr-only" onChange={importJson} />
-      <button className="import-fab" onClick={() => fileInputRef.current?.click()}><Upload size={15} /> Importar JSON</button>
+      <button className={`import-fab ${!rightVisible ? "fab-full" : ""}`} onClick={() => fileInputRef.current?.click()}><Upload size={15} /> Importar JSON</button>
     </main>
   );
 }

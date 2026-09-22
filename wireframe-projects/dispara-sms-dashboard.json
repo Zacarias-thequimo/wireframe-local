@@ -1,0 +1,357 @@
+{
+  "version": 1,
+  "name": "Dispara SMS — Dashboard",
+  "device": "desktop",
+  "blocks": [],
+  "pages": [
+    {
+      "id": "24b5058b-ebf7-486b-8d2d-ee9f73d5191e",
+      "name": "Dashboard",
+      "blocks": [
+        {
+          "id": "84a7e0ec-0a74-4646-a5b8-a49ece7cfd20",
+          "type": "navbar",
+          "x": 52,
+          "y": 24,
+          "w": 996,
+          "h": 56,
+          "label": "DISPARA SMS   /   Dashboard   Contactos   Listas   Etiquetas   Importações",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e8f0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "c7d01154-ec85-4a86-8095-f6c8874fc78d",
+          "type": "card",
+          "x": 52,
+          "y": 100,
+          "w": 220,
+          "h": 480,
+          "label": "MENU\n\n●  Dashboard\n●  Contactos\n●  Listas\n●  Etiquetas\n●  Importações\n\nCONTA\n●  Definições\n●  Sair",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e8f0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "d208c705-a5b1-467d-ba3b-2287779b01ae",
+          "type": "heading",
+          "x": 300,
+          "y": 104,
+          "w": 360,
+          "h": 44,
+          "label": "Visão geral",
+          "style": {
+            "fill": "#f4f6fb",
+            "border": "#f4f6fb",
+            "text": "#171922",
+            "radius": 0
+          }
+        },
+        {
+          "id": "97613f0c-9380-4ef7-9584-cda405f2a4ed",
+          "type": "button",
+          "x": 888,
+          "y": 104,
+          "w": 148,
+          "h": 40,
+          "label": "Nova campanha",
+          "style": {
+            "fill": "#143bff",
+            "border": "#143bff",
+            "text": "#ffffff",
+            "radius": 10
+          }
+        },
+        {
+          "id": "0a572b96-dc1b-45d7-878f-f3d2ae911272",
+          "type": "card",
+          "x": 300,
+          "y": 168,
+          "w": 172,
+          "h": 96,
+          "label": "Contactos\n1 248\n+32 esta semana",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e8f0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "a592c5ae-1436-48e3-a9f1-e7916cb5c158",
+          "type": "card",
+          "x": 488,
+          "y": 168,
+          "w": 172,
+          "h": 96,
+          "label": "Listas\n14\n2 ativas",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e8f0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "c066506f-70e5-4588-ba0a-bfe71d523690",
+          "type": "card",
+          "x": 676,
+          "y": 168,
+          "w": 172,
+          "h": 96,
+          "label": "Etiquetas\n27",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e8f0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "6acd5153-b5a4-4e0f-8e5e-d3fe90b922f3",
+          "type": "card",
+          "x": 864,
+          "y": 168,
+          "w": 172,
+          "h": 96,
+          "label": "Opt-outs\n3\n−1 esta semana",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e8f0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "ade714f2-4983-4bb9-a3f1-fc1ef53054d7",
+          "type": "image",
+          "x": 300,
+          "y": 288,
+          "w": 452,
+          "h": 200,
+          "label": "Gráfico — novos contactos por semana",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e8f0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "321e9778-2675-4311-8a67-538ae779d093",
+          "type": "card",
+          "x": 768,
+          "y": 288,
+          "w": 268,
+          "h": 200,
+          "label": "Contactos por país\n\nAO  62%\nMZ  24%\nZA  14%",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e8f0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "8bf8b25d-6db3-4cd6-8481-2478df0aa6ed",
+          "type": "card",
+          "x": 300,
+          "y": 512,
+          "w": 736,
+          "h": 160,
+          "label": "Últimas importações\n\nCSV · 312 contactos · concluído — há 2 h\nCSV · 48 contactos · concluído — ontem\nManual · 3 contactos — hoje",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e8f0",
+            "text": "#242631",
+            "radius": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": "efa6e8cb-e9fc-436c-82e9-a65442358f8a",
+      "name": "Contactos",
+      "blocks": [
+        {
+          "id": "d7dd3ef7-a7a6-45de-b714-fa5c8ed69b1b",
+          "type": "navbar",
+          "x": 52,
+          "y": 24,
+          "w": 996,
+          "h": 56,
+          "label": "DISPARA SMS   /   Dashboard   Contactos   Listas   Etiquetas   Importações",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e8f0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "8b522145-fcdc-4fec-a19d-c8eae544db86",
+          "type": "heading",
+          "x": 52,
+          "y": 104,
+          "w": 320,
+          "h": 44,
+          "label": "Contactos  (1 248)",
+          "style": {
+            "fill": "#f4f6fb",
+            "border": "#f4f6fb",
+            "text": "#171922",
+            "radius": 0
+          }
+        },
+        {
+          "id": "34713aec-5d3a-48b5-9c82-d94e1ae2767a",
+          "type": "input",
+          "x": 52,
+          "y": 168,
+          "w": 320,
+          "h": 40,
+          "label": "Pesquisar por nome ou número…",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e8f0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "efd3bb92-6c80-4219-aeb0-d0fcc5a5ffd6",
+          "type": "button",
+          "x": 388,
+          "y": 168,
+          "w": 120,
+          "h": 40,
+          "label": "Filtros ▾",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#cbd4f5",
+            "text": "#143bff",
+            "radius": 10
+          }
+        },
+        {
+          "id": "7e930b5b-5493-447a-a5e8-8c11c683edba",
+          "type": "button",
+          "x": 888,
+          "y": 168,
+          "w": 160,
+          "h": 40,
+          "label": "Novo contacto",
+          "style": {
+            "fill": "#143bff",
+            "border": "#143bff",
+            "text": "#ffffff",
+            "radius": 10
+          }
+        },
+        {
+          "id": "8a97ab44-8d74-462c-87b4-19fdeed681b2",
+          "type": "card",
+          "x": 52,
+          "y": 232,
+          "w": 996,
+          "h": 348,
+          "label": "NOME                 TELEFONE           PAÍS   ETIQUETAS       ESTADO\n──────────────────────────────────────────────────────────────\nAna Domingos         +244 923 000 111   AO     clientes, vip    ativo\nJoão Muthembwa       +258 84 000 222    MZ     clientes         ativo\nThandi Nkosi         +27 82 000 333     ZA     prospects        ativo\nPedro Cassoma        +244 923 000 444   AO     opt-out          inativo\n\n1–4 de 1 248         ‹ Anterior   1 2 3 … 312   Seguinte ›",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e8f0",
+            "text": "#242631",
+            "radius": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": "5ccc0c51-c9cd-49df-b6b9-27890148a299",
+      "name": "Importações",
+      "blocks": [
+        {
+          "id": "718a421a-ae7c-472f-bf9b-bbcf3bb452e6",
+          "type": "navbar",
+          "x": 52,
+          "y": 24,
+          "w": 996,
+          "h": 56,
+          "label": "DISPARA SMS   /   Dashboard   Contactos   Listas   Etiquetas   Importações",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e8f0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "ade4ed5a-898e-46c0-b447-dddcc6649632",
+          "type": "heading",
+          "x": 52,
+          "y": 104,
+          "w": 360,
+          "h": 44,
+          "label": "Importações",
+          "style": {
+            "fill": "#f4f6fb",
+            "border": "#f4f6fb",
+            "text": "#171922",
+            "radius": 0
+          }
+        },
+        {
+          "id": "67bd675a-3f1c-4ff8-9a14-66a3246502b2",
+          "type": "button",
+          "x": 872,
+          "y": 104,
+          "w": 176,
+          "h": 40,
+          "label": "Importar CSV",
+          "style": {
+            "fill": "#143bff",
+            "border": "#143bff",
+            "text": "#ffffff",
+            "radius": 10
+          }
+        },
+        {
+          "id": "90494bf2-55db-4d89-ba3c-760915a2582a",
+          "type": "card",
+          "x": 52,
+          "y": 168,
+          "w": 996,
+          "h": 180,
+          "label": "Assistente de importação — passo 1 de 5\n\n  Arraste o ficheiro CSV para aqui ou clique para escolher\n\nUpload  ›  Mapear colunas  ›  Opções  ›  Processar  ›  Resultado",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e8f0",
+            "text": "#242631",
+            "radius": 12
+          }
+        },
+        {
+          "id": "2f3f4563-f6a1-4ea0-838a-059aaa731ceb",
+          "type": "card",
+          "x": 52,
+          "y": 372,
+          "w": 996,
+          "h": 208,
+          "label": "Histórico\n\nhá 2 h     clientes-set.csv     312 importados · 4 ignorados    concluído\nontem      prospects-ao.csv     48 importados · 0 ignorados     concluído\n12 set     mala-direta.csv      1 020 importados                concluído",
+          "style": {
+            "fill": "#ffffff",
+            "border": "#e4e8f0",
+            "text": "#242631",
+            "radius": 12
+          }
+        }
+      ]
+    }
+  ],
+  "activePageId": "24b5058b-ebf7-486b-8d2d-ee9f73d5191e"
+}

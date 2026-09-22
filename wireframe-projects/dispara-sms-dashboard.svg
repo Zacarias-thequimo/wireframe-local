@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 720" width="1100" height="720">
+<rect width="1100" height="720" fill="#f4f6fb"/>
+<rect x="52" y="24" width="996" height="56" rx="12" fill="#ffffff" stroke="#e4e8f0" stroke-width="1.5"/>
+<text font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#242631"><tspan x="68" y="56.666666666666664">DISPARA SMS   /   Dashboard   Contactos   Listas   Etiquetas   Importações</tspan></text>
+<rect x="52" y="100" width="220" height="480" rx="12" fill="#ffffff" stroke="#e4e8f0" stroke-width="1.5"/>
+<text font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#242631"><tspan x="68" y="254.66666666666666">MENU</tspan><tspan x="68" y="272.66666666666663"></tspan><tspan x="68" y="290.66666666666663">●  Dashboard</tspan><tspan x="68" y="308.66666666666663">●  Contactos</tspan><tspan x="68" y="326.66666666666663">●  Listas</tspan><tspan x="68" y="344.66666666666663">●  Etiquetas</tspan><tspan x="68" y="362.66666666666663">●  Importações</tspan><tspan x="68" y="380.66666666666663"></tspan><tspan x="68" y="398.66666666666663">CONTA</tspan><tspan x="68" y="416.66666666666663">●  Definições</tspan><tspan x="68" y="434.66666666666663">●  Sair</tspan></text>
+<rect x="300" y="104" width="360" height="44" rx="0" fill="#f4f6fb" stroke="#f4f6fb" stroke-width="1.5"/>
+<text font-family="ui-sans-serif, system-ui, sans-serif" font-size="24" fill="#171922" font-weight="700"><tspan x="316" y="134">Visão geral</tspan></text>
+<rect x="888" y="104" width="148" height="40" rx="10" fill="#143bff" stroke="#143bff" stroke-width="1.5"/>
+<text font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#ffffff"><tspan x="904" y="128.66666666666666">Nova campanha</tspan></text>
+<rect x="300" y="168" width="172" height="96" rx="12" fill="#ffffff" stroke="#e4e8f0" stroke-width="1.5"/>
+<text font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#242631"><tspan x="316" y="202.66666666666666">Contactos</tspan><tspan x="316" y="220.66666666666666">1 248</tspan><tspan x="316" y="238.66666666666666">+32 esta semana</tspan></text>
+<rect x="488" y="168" width="172" height="96" rx="12" fill="#ffffff" stroke="#e4e8f0" stroke-width="1.5"/>
+<text font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#242631"><tspan x="504" y="202.66666666666666">Listas</tspan><tspan x="504" y="220.66666666666666">14</tspan><tspan x="504" y="238.66666666666666">2 ativas</tspan></text>
+<rect x="676" y="168" width="172" height="96" rx="12" fill="#ffffff" stroke="#e4e8f0" stroke-width="1.5"/>
+<text font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#242631"><tspan x="692" y="211.66666666666666">Etiquetas</tspan><tspan x="692" y="229.66666666666666">27</tspan></text>
+<rect x="864" y="168" width="172" height="96" rx="12" fill="#ffffff" stroke="#e4e8f0" stroke-width="1.5"/>
+<text font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#242631"><tspan x="880" y="202.66666666666666">Opt-outs</tspan><tspan x="880" y="220.66666666666666">3</tspan><tspan x="880" y="238.66666666666666">−1 esta semana</tspan></text>
+<rect x="300" y="288" width="452" height="200" rx="12" fill="#ffffff" stroke="#e4e8f0" stroke-width="1.5"/>
+<text font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#242631"><tspan x="316" y="392.6666666666667">Gráfico — novos contactos por semana</tspan></text>
+<rect x="768" y="288" width="268" height="200" rx="12" fill="#ffffff" stroke="#e4e8f0" stroke-width="1.5"/>
+<text font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#242631"><tspan x="784" y="356.6666666666667">Contactos por país</tspan><tspan x="784" y="374.6666666666667"></tspan><tspan x="784" y="392.6666666666667">AO  62%</tspan><tspan x="784" y="410.6666666666667">MZ  24%</tspan><tspan x="784" y="428.6666666666667">ZA  14%</tspan></text>
+<rect x="300" y="512" width="736" height="160" rx="12" fill="#ffffff" stroke="#e4e8f0" stroke-width="1.5"/>
+<text font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#242631"><tspan x="316" y="560.6666666666666">Últimas importações</tspan><tspan x="316" y="578.6666666666666"></tspan><tspan x="316" y="596.6666666666666">CSV · 312 contactos · concluído — há 2 h</tspan><tspan x="316" y="614.6666666666666">CSV · 48 contactos · concluído — ontem</tspan><tspan x="316" y="632.6666666666666">Manual · 3 contactos — hoje</tspan></text>
+</svg>
